@@ -1,0 +1,20 @@
+{  
+  "input_original": "/data/AMIT/4Alex/130821_TEST/brightfield",
+  "input_binary": "/data/AMIT/4Alex/130821_TEST/AMITSegmentation/binary_900",
+  "input_fungi_binary": "/data/AMIT/4Alex/130821_TEST/AMITSegmentation/green_binary",
+  "input_fungi_singlecells_binary": "/data/AMIT/4Alex/130821_TEST/AMITSegmentation/green_binary_singlecells",
+  "input_dead_binary": "/data/AMIT/4Alex/130821_TEST/AMITSegmentation/red_binary",
+  "classification_file": "/data/AMIT/4Alex/130821_TEST/AMITStateClassification/classification.csv",
+  "output": "/data/AMIT/4Alex/130821_TEST/AMITTracking_ibp_cbFALSE_g2_00",
+  "interaction_tracking": true,
+  "cluster_detection_method": "ibp",
+  "number_classes": 2,
+  "overlap_threshold": 0.1,
+  "canny_threshold": 100,
+  "clear_border": false,
+  "gap": 2,
+  "delay": 0,
+  "fontsize": 1,
+  "debug": true,
+  "n_threads": 1
+}

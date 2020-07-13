@@ -1,0 +1,9 @@
+{
+  "input_gray": "/brightfield/",
+  "input_binary": "/AMITSegmentation/binary/",
+  "input_fungal": "/AMITSegmentation/green_binary/",
+  "input_dead": "/AMITSegmentation/red_binary/",
+  "output": "/AMITStateClassification/",
+  "debug": false,
+  "n_threads": 1
+}

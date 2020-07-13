@@ -39,12 +39,12 @@ make
 For servers:
 
 ```shell
-wget https://github.com/opencv/opencv/archive/3.2.13.6.zip -O opencv-3.2.13.6.zip
-unzip opencv-3.2.13.6.zip
-cd opencv-3.2.13.6
+wget https://github.com/opencv/opencv/archive/3.2.0.zip -O opencv-3.2.0.zip
+unzip opencv-3.2.0.zip
+cd opencv-3.2.0
 mkdir build
 cd build
-cmake -DCMAKE_INSTALL_PREFIX=$HOME/opencv-3.2.13.6 -DCMAKE_BUILD_TYPE=Release -DWITH_IPP=OFF -DBUILD_TIFF=ON -DWITH_GTK=OFF ..
+cmake -DCMAKE_INSTALL_PREFIX=$HOME/opencv-3.2.0 -DCMAKE_BUILD_TYPE=Release -DWITH_IPP=OFF -DBUILD_TIFF=ON -DWITH_GTK=OFF ..
 make
 make install
 ```

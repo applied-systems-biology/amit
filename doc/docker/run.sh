@@ -8,4 +8,4 @@ fi
 
 IMAGE_NAME="amit3"
 
-docker run --user 1001:1001 --volume /data/1_Projects/Tracking/:/data -it $IMAGE_NAME /bin/bash
+docker run --user 1001:1001 --volume /data/Projects/AMITv3/:/data -it $IMAGE_NAME /bin/bash

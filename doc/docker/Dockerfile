@@ -10,6 +10,8 @@ RUN apt-get update \
       "liblemon-dev" \
       "libopencv-highgui-dev"\
       "libpng-dev" \
+      "libboost-all-dev" \
+      "libomp-dev" \
       "libtiff5-dev" \
       "unzip" \
       "wget" \

@@ -51,5 +51,9 @@ target_include_directories( AMITSegmentation PRIVATE ${OpenCV_INCLUDE_DIRS} )
 target_link_libraries( AMITSegmentation PRIVATE OpenMP::OpenMP_CXX ${OpenCV_LIBS} )
 target_link_libraries( AMITSegmentation PUBLIC AMITutils )
 
+install(TARGETS AMITSegmentation
+		RUNTIME
+		DESTINATION bin
+		COMPONENT application)
 
 

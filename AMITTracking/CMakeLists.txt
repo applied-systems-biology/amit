@@ -42,3 +42,8 @@ target_link_libraries( AMITTracking PRIVATE ${OpenMP_CXX_FLAGS})
 target_include_directories( AMITTracking PRIVATE ${OpenCV_INCLUDE_DIRS} )
 target_link_libraries( AMITTracking PRIVATE OpenMP::OpenMP_CXX ${OpenCV_LIBS} )
 target_link_libraries( AMITTracking PUBLIC AMITutils )
+
+install(TARGETS AMITTracking
+		RUNTIME
+		DESTINATION bin
+		COMPONENT application)

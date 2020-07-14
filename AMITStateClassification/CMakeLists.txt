@@ -42,3 +42,8 @@ target_link_libraries( AMITStateClassification PUBLIC AMITutils )
 configure_file(src/classification.R ${CMAKE_CURRENT_BINARY_DIR}/src/classification.R COPYONLY)
 configure_file(src/ref7.csv ${CMAKE_CURRENT_BINARY_DIR}/src/ref7.csv COPYONLY)
 configure_file(src/data130819_red.csv ${CMAKE_CURRENT_BINARY_DIR}/src/data130819_red.csv COPYONLY)
+
+install(TARGETS AMITStateClassification
+        RUNTIME
+        DESTINATION bin
+        COMPONENT application)

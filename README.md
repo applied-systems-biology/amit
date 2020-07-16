@@ -3,13 +3,13 @@
 </p>
 ------
 
-### This framework allows the segmentation, classification and tracking of immune cells such as PMNs or macrophages and fungal cells in migration and confrontation assays.
+#### This framework allows the segmentation, classification and tracking of immune cells such as PMNs or macrophages and fungal cells in migration and confrontation assays.
 
 ------
 
 ## Dependencies
 
-AMIT depends on following libraries:
+**AMIT** depends on following libraries:
 
 | Library             | Version          | Author                                                | URL                                 |
 | ------------------- | ---------------- | ----------------------------------------------------- | ----------------------------------- |
@@ -19,11 +19,31 @@ AMIT depends on following libraries:
 | OpenCV              | 3.2 or higher    | OpenCV                                                | https://opencv.org/releases/        |
 | LEMON Graph library | 0.7 or higher    | Egerváry Research Group on Combinatorial Optimization | https://lemon.cs.elte.hu/trac/lemon |
 
-You need a compiler capable of C++ version 2017 or higher to compile AMIT.
+You need a compiler capable of C++ version 2017 or higher to compile **AMIT**.
 
-## Building 
+## Installation 
 
-If all dependencies are installed on the system, just run:
+There are 3 ways to install **AMIT**:
+
+##### Install from a package
+
+- [ ] Go to https://github.com/applied-systems-biology/amit/releases and download the latest release
+- [ ] Either install the deb file directly or extract the tar.gz 
+- [ ] During the installation or execution of the binaries it is automatically checked whether all dependencies are given
+
+##### Install with docker
+
+- [ ] Navigate from the **AMIT** main directory to `doc/docker`, create a docker image with a given bash-script `build.sh` and run the docker-container with a  (root permissions required, automatically install {cmake, nlohmann-json, opencv}): 
+
+```shell
+cd ./doc/docker
+sudo sh build.sh
+sudo sh run.sh
+```
+
+##### Install it by building it yourself 
+
+- [ ] If all dependencies are installed on the system, just run:
 
 ```shell
 mkdir build
@@ -91,7 +111,7 @@ Take a closer look at the corresponding *README* - files in the respective subfo
 
 ## Citation
 
-Please cite  AMIT if you are using this work in your publication. Here is an example BibTeX entry:
+Please cite  **AMIT** if you are using this work in your publication. Here is an example BibTeX entry:
 
 > ```json
 > @article{praetorius2020AMIT,

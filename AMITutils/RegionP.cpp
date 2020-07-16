@@ -197,7 +197,7 @@ void RegionP::computeCentroidFromGreenPixels(){
 }
 
 /**
- * @return class of one of the 5 phagocythosis types 
+ * @return class of one of the 5 phagocythosis types
  */
 cell_class::pathogen RegionP::getClassP(){
 	return this->klassP;
@@ -207,8 +207,8 @@ cell_class::pathogen RegionP::getClassP(){
 // if( fabs( area ) >= (double) p){
 //     cv::drawContours(dst, contours, i, cv::Scalar(255), -1);
 // }
-int RegionP::getAreaGray(){ 
-	return this->region_pixels.size() - this->green_region_pixels.size(); 
+int RegionP::getAreaGray(){
+	return this->region_pixels.size() - this->green_region_pixels.size();
 }
 
 /**
@@ -292,7 +292,6 @@ void RegionP::removeLastPhID(){
 
 void RegionP::removePhIDs(){
 	if(this->phagocytosisIDs.size() > 0){
-//		cout<< this->phagocytosisIDs.size();
 		this->phagocytosisIDs.resize(0);
 	}
 }
@@ -302,8 +301,6 @@ void RegionP::setClassP(cell_class::pathogen c){
 }
 
 void RegionP::setIState(int state){
-//	cout << "set istate " << state << endl;
-
 	this->I_state=state;
 }
 

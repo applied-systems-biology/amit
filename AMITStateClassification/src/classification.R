@@ -83,7 +83,6 @@ print(args[2])
 
 print(getwd())
 
-#setwd("../src/") #changed by Philipp
 setwd("./src/")
 
 print(getwd())

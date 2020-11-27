@@ -50,6 +50,7 @@ namespace ImageProcessingToolbox
     // functions
 
     std::string type2str(int type);
+    cv::Mat create_disk(int radius);
     cv::Mat createKernel(const std::string kernelType);
     std::vector<float> unique(const cv::Mat& input, bool sort = false);
 
@@ -71,6 +72,7 @@ namespace ImageProcessingToolbox
     void regionprops(const cv::Mat &src, std::vector<std::vector<cv::Point> > &object_coordinates, const std::string &method);
     void adapthisteq(const cv::Mat &src, cv::Mat &dst, const double clipLimit=4.0, const std::string distribution="uniform");
     void stdfilt(const cv::Mat &src, cv::Mat &dst);
+    void stdfilter(const cv::Mat &src, cv::Mat &dst);
     
     // needed licence
     void bwlookup( const cv::Mat & in, cv::Mat & out, const cv::Mat & lut, int bordertype=cv::BORDER_CONSTANT, cv::Scalar px = cv::Scalar(0) ); 

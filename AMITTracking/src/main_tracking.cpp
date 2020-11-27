@@ -74,9 +74,9 @@ int main(int argc, char* argv[]) {
     size_t N_THREADS = J["n_threads"].get<int>();
     bool FLAG_DEBUG = J["debug"].get<bool>();   
     
-    assertm( CLUSTER_DETECTION_METHOD == "ibp" || CLUSTER_DETECTION_METHOD == "gmm" || CLUSTER_DETECTION_METHOD == "none", "Please choose either <ibp> , <gmm> or <none> for cluster detection method");
-    if( CLUSTER_DETECTION_METHOD != "ibp" && CLUSTER_DETECTION_METHOD != "gmm" && CLUSTER_DETECTION_METHOD != "none" ){
-        std::cout << " [ERROR] Please choose either <ibp> , <gmm> or <none> for parameter cluster_detection_method!" << std::endl;
+    assertm( CLUSTER_DETECTION_METHOD == "faf" || CLUSTER_DETECTION_METHOD == "gmm" || CLUSTER_DETECTION_METHOD == "none", "Please choose either <faf> , <gmm> or <none> for cluster detection method");
+    if( CLUSTER_DETECTION_METHOD != "faf" && CLUSTER_DETECTION_METHOD != "gmm" && CLUSTER_DETECTION_METHOD != "none" ){
+        std::cout << " [ERROR] Please choose either <faf> , <gmm> or <none> for parameter cluster_detection_method!" << std::endl;
         return -1;
     }
 
@@ -140,17 +140,17 @@ int main(int argc, char* argv[]) {
 
     }
     /***   detect clusters and retrieve information from objList.type for each region   ***/
-    else if(CLUSTER_DETECTION_METHOD == "ibp"){
+    else if(CLUSTER_DETECTION_METHOD == "faf"){
 
         std::vector<cv::Mat> images_objMaps;
         feature_data objList;
 
-        std::cout << " [3.0.0] Overlap-fraction of ibp:\t" << overlap_thr << std::endl;
+        std::cout << " [3.0.0] Overlap-fraction of faf:\t" << overlap_thr << std::endl;
         ibp_cluster_detection::clustDetectRun(images_binary, images_objMaps, objList, overlap_thr, FLAG_DEBUG);
 
         /// assign detected cluster / single-cells to the corresponding regions
-        ibp_cluster_detection::assign_ibp_class_to_region(regions_over_time, images_objMaps, DELAY, INPUTDIR_ORIGINAL, OUTPUTDIR, FLAG_DEBUG);
-
+        ibp_cluster_detection::assign_ibp_class_to_region(regions_over_time, images_objMaps, INPUTDIR_ORIGINAL, OUTPUTDIR, FLAG_DEBUG);
+        
         /// write cluster regions to region-files if debug mode is switched ON
         if (FLAG_DEBUG){
             std::string file_regions = io::create_directory(OUTPUTDIR, "region_files/");
@@ -169,7 +169,7 @@ int main(int argc, char* argv[]) {
 
         int canny_threshold = J["canny_threshold"];
 
-        std::string path_cS = OUTPUTDIR + "/3_ibp_clusterSplitting/";
+        std::string path_cS = OUTPUTDIR + "/3_faf_clusterSplitting/";
         ibp_cluster_detection::cluster_splitting(images_original, images_binary, objList, images_cluster_splitted, canny_threshold, path_cS, N_THREADS, FLAG_DEBUG);
 
         std::cout << " [3.1] cluster splitting done" << std::endl;
@@ -201,7 +201,7 @@ int main(int argc, char* argv[]) {
 
     }
     else{
-        std::cout << " [3.1] ERROR: choose one of the following cluster detection methods: { gmm, ibp, none } " << std::endl;
+        std::cout << " [3.1] ERROR: choose one of the following cluster detection methods: { gmm, faf, none } " << std::endl;
         return 1;
     }
 

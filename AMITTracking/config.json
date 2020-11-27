@@ -3,7 +3,7 @@
   "input_binary": "/AMITSegmentation/binary/",
   "output": "/AMITTracking/",
   "clear_border": false,
-  "cluster_detection_method": "ibp",
+  "cluster_detection_method": "faf",
   "number_classes": 2,
   "overlap_threshold": 0.1,
   "canny_threshold": 100,

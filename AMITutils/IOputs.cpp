@@ -11,9 +11,6 @@
  */
 
 #include <iostream>
-#include <sstream>
-#include <chrono>
-#include <fstream>
 #include <dirent.h>
 #include <errno.h>
 #include <opencv2/imgproc.hpp>
@@ -30,6 +27,29 @@ namespace IPT = ImageProcessingToolbox;
 
 
 namespace io {
+
+    /**
+	 * Determine the bit-depth of an image (e.g. 8,16,32 bit per pixel).
+     * Default bit-depth is 8-bit.
+	 *
+	 * @param img input image
+     * @return bit-depth
+	 *
+	 */
+	 int get_image_bit_depth(const int &depth){
+
+        switch ( depth ) {
+            case CV_8U:  return 8;
+            case CV_8S:  return 8;
+            case CV_16U: return 16;
+            case CV_16S: return 16;
+            case CV_32S: return 32;
+            case CV_32F: return 32;
+            case CV_64F: return 64;
+            default:     return 8;
+        }
+
+	 }
 
 	/**
 	 * Search for specified file in specified directory
@@ -96,6 +116,8 @@ namespace io {
 		std::cerr << " [INFO] OpenCV IMREAD-mode: " << IPT::type2str(COLOR_FLAG) << "\tint: " << COLOR_FLAG << std::endl;		
 
 		cv::Size mysize = cv::Size(-1,-1);
+		int bit_depth = 0;
+        int max_bit_wise_intensity = 0;
 
 		std::vector<std::string> files;
 		
@@ -107,32 +129,25 @@ namespace io {
 			
 			cv::Mat img, img_cvt;
 
-			try{  
+			try{
 
-				/// convert to 8UC1 image for imread-mode: IMREAD_GRAYSCALE
+                img = cv::imread(files[i], cv::IMREAD_ANYDEPTH);
+
+                /// fetch the information of the image(s) from the first one and keep this for all images inside the specified directory
+                if (i == 0){
+                    bit_depth = get_image_bit_depth( img.depth() );
+                    max_bit_wise_intensity = std::pow(2, bit_depth);
+                }
+
+                /// convert/normalize to 8UC1 image for imread-mode: IMREAD_GRAYSCALE
 				if (COLOR_FLAG == cv::IMREAD_GRAYSCALE){
-
-					img = cv::imread(files[i], cv::IMREAD_ANYDEPTH);
-					
-					double  minVal,  maxVal;
-					cv::minMaxLoc(img, &minVal, &maxVal); 	
-
-					img.convertTo(img_cvt, CV_8UC1, (1.0 / maxVal)*255. , 0. );	
-
-				} 
-				/// convert to 8UC3 image for imread-mode: IMREAD_COLOR
+                    img.convertTo(img_cvt, CV_8UC1, (1.0 / (max_bit_wise_intensity-1) ) * 255 , 0. );
+                }
+				/// convert/normalize to 8UC3 image for imread-mode: IMREAD_COLOR
 				else if (COLOR_FLAG == cv::IMREAD_COLOR){
-
-					img = cv::imread(files[i], cv::IMREAD_ANYCOLOR);
-					
-					double  minVal,  maxVal;
-					cv::minMaxLoc(img, &minVal, &maxVal); 	
-
-					img.convertTo(img_cvt, CV_8UC3, (1.0 / maxVal)*255. , 0. );	
-
-				}				
+                    img.convertTo(img_cvt, CV_8UC3, (1.0 / (max_bit_wise_intensity-1) ) * 255, 0.);
+				}
 				else {
-					img = cv::imread(files[i], cv::IMREAD_ANYCOLOR);
 					img.copyTo(img_cvt);
 				}	
 
@@ -199,11 +214,20 @@ namespace io {
 	 * @param outputdir 	output directory
 	 * @param image 	 	image to be saved
 	 * @param i			 	number of the image in the file list
-	 * @param addon 		(optional) suffix in filename 
+	 * @param addon 		(optional) suffix in filename
+	 * @param image_type 	(optional) type of image (default = png)
 	 */
-	void write_image(const std::string &outDir, const cv::Mat &image, const int &i, std::optional<bool> verbose, std::optional<std::string> addon){ 
-		
-		std::string img_type = ".png";
+	void write_image(const std::string &outDir, const cv::Mat &image, const int &i, std::optional<bool> verbose, std::optional<std::string> addon, std::optional<std::string> image_type){
+
+	    // differ for the image type (e.g. png / jpg)
+        std::string img_type;
+	    if( image_type.has_value() )  {
+            img_type = "." + image_type.value();
+        }
+	    else{
+            img_type = ".png";
+	    }
+
 		char last_char = outDir.back();
 
 		// build string with 0-prefix for index (001, 054, ...)

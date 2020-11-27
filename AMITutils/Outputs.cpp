@@ -256,7 +256,7 @@ namespace outputs
             }
 
             // save the images
-            io::write_image(outputdir, image, (i+delay) );
+            io::write_image(outputdir, image, (i+delay), false, std::nullopt, "jpg" );
 
         }
     }
@@ -339,7 +339,7 @@ namespace outputs
             }
 
             // save the images ( +1 because start suffix at 1 )
-            io::write_image(outputdir, image, i+delay+1 );
+            io::write_image(outputdir, image, i+delay+1, false, std::nullopt, "jpg" );
 
         }
     }
@@ -433,7 +433,7 @@ namespace outputs
 			}
 
             // save the images ( +1 because start suffix at 1 )
-            io::write_image(outputdir, image, (t+delay)+1 );
+            io::write_image(outputdir, image, (t+delay)+1, false, std::nullopt, "jpg" );
 
 		}
     }
@@ -526,7 +526,7 @@ namespace outputs
             }
 
             // save the images ( +1 because start suffix at 1 )
-            io::write_image(outputdir, image, (t+delay)+1 );
+            io::write_image(outputdir, image, (t+delay)+1, false, std::nullopt, "jpg" );
 
         }
 
@@ -620,7 +620,7 @@ namespace outputs
 			}
 
             // save the images ( +1 because start suffix at 1 )
-            io::write_image(outputdir, image, (t+delay)+1 );
+            io::write_image(outputdir, image, (t+delay)+1, false, std::nullopt, "jpg" );
 		
         }
     }
@@ -713,7 +713,7 @@ namespace outputs
             }
 
             // save the images ( +1 because start suffix at 1 )
-            io::write_image(outputdir, image, (t+delay)+1 );
+            io::write_image(outputdir, image, (t+delay)+1, false, std::nullopt, "jpg" );
 
         }
     }
@@ -1129,6 +1129,121 @@ namespace outputs
         }
 
         outfile.close();
+
+    }
+
+    /**
+    * Draw an image on the previous segmented regions for class <RegionP>
+    *
+    * @param region_over_time regions
+    * @param img_size underlying image size
+    */
+    void createImageFromRegion(cv::Mat &dst, std::vector<RegionP> &region_over_time, const cv::Size img_size, const cv::Scalar color, std::optional<int> thickness){
+
+        cv::Mat img_mask = cv::Mat::zeros(img_size, CV_8UC1);
+
+        std::vector<std::vector<cv::Point>> contours;
+
+        // create all regions per frames
+        std::vector<RegionP>::iterator reg;
+        // iterate about all regions
+        #pragma omp for firstprivate(region_over_time)
+        for(reg = region_over_time.begin(); reg != region_over_time.end(); reg++){
+
+            std::vector<cv::Point> cnt;
+
+            // iterate over all contour points parse the cv::Vec2i contour vector into cv::Point
+            for (size_t p = 0; p < reg->region_pixels.size(); ++p) {
+
+                try {
+                    cv::Vec2i region_point = reg->region_pixels[p];
+
+                    cv::Point cnt_point = static_cast<cv::Point>(region_point);
+
+                    cnt.push_back( cnt_point );
+                } catch (const std::exception& e) {
+                    std::cout << e.what() << std::endl;
+                }
+
+            }
+
+            contours.push_back( cnt );
+
+        }
+
+        // draw the contour of the region into the image
+        for(size_t c = 0; c < contours.size(); ++c ) {
+            cv::drawContours(img_mask, contours, c, cv::Scalar(255), cv::FILLED);
+        }
+
+        // transpose the mask because of i-j differs for cv::Vec2i and cv::Point format
+        cv::transpose(img_mask, img_mask);
+
+        // some objects contours are not completely filled, find again all contours and fill them up
+        std::vector<std::vector<cv::Point>> contours_2nd;
+        std::vector<cv::Vec4i> hierarchy;
+        cv::findContours( img_mask, contours_2nd, hierarchy, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_NONE, cv::Point(0, 0) );
+
+        for(size_t c = 0; c < contours_2nd.size(); ++c ) {
+            cv::drawContours(dst, contours_2nd, c, color, thickness.value_or(2), cv::LINE_8, hierarchy);
+        }
+
+    }
+
+    /**
+   * Draw an image on the previous segmented regions for class <Region>
+   *
+   * @param region_over_time regions
+   * @param img_size underlying image size
+   */
+    void createImageFromRegion(cv::Mat &dst, std::vector<Region> &region_over_time, const cv::Size img_size, const cv::Scalar color, std::optional<int> thickness){
+
+        cv::Mat img_mask = cv::Mat::zeros(img_size, CV_8UC1);
+
+        std::vector<std::vector<cv::Point>> contours;
+
+        // create all regions per frames
+        std::vector<Region>::iterator reg;
+        // iterate about all regions
+        for(reg = region_over_time.begin(); reg != region_over_time.end(); reg++){
+
+            std::vector<cv::Point> cnt;
+
+            // iterate over all contour points parse the cv::Vec2i contour vector into cv::Point
+            for (size_t p = 0; p < reg->region_pixels.size(); ++p) {
+
+                try {
+                    cv::Vec2i region_point = reg->region_pixels[p];
+
+                    cv::Point cnt_point = static_cast<cv::Point>(region_point);
+
+                    cnt.push_back( cnt_point );
+                } catch (const std::exception& e) {
+                    std::cout << e.what() << std::endl;
+                }
+
+            }
+
+            contours.push_back( cnt );
+
+        }
+
+        // draw the contour of the region into the image
+        for(size_t c = 0; c < contours.size(); ++c ) {
+            cv::drawContours(img_mask, contours, c, cv::Scalar(255), cv::FILLED);
+        }
+
+        // transpose the mask because of i-j differs for cv::Vec2i and cv::Point format
+        cv::transpose(img_mask, img_mask);
+
+        // some objects contours are not completely filled, find again all contours and fill them up
+        std::vector<std::vector<cv::Point>> contours_2nd;
+        std::vector<cv::Vec4i> hierarchy;
+        cv::findContours( img_mask, contours_2nd, hierarchy, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_NONE, cv::Point(0, 0) );
+
+        for(size_t c = 0; c < contours_2nd.size(); ++c ) {
+            cv::drawContours(dst, contours_2nd, c, color, thickness.value_or(2), cv::LINE_8, hierarchy);
+        }
 
     }
 

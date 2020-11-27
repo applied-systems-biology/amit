@@ -60,4 +60,7 @@ namespace outputs {
 
     void printClusterRegions(const std::string path, std::vector<CellTrack> &tracks);
 
+    void createImageFromRegion(cv::Mat &dst, std::vector<RegionP> &region_over_time, const cv::Size img_size, const cv::Scalar color, std::optional<int> thickness = std::nullopt);
+    void createImageFromRegion(cv::Mat &dst, std::vector<Region> &region_over_time, const cv::Size img_size, const cv::Scalar color, std::optional<int> thickness = std::nullopt);
+
 } // outputs

@@ -81,7 +81,7 @@ namespace otsu
                 // for debugging purpose: draw contours in source-image 
                 ibp::myfindContours(binary, images[i], img_cnt);        
                 // save control image
-                io::write_image(OUTPUTDIR_CNT, img_cnt, i, true);
+                io::write_image(OUTPUTDIR_CNT, img_cnt, i, true, std::nullopt, "jpg");
             } 
 
             // save binary image including PMNs

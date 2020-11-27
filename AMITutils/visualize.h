@@ -32,5 +32,6 @@ namespace visual {
     };
 
     void createGUI( cv::Mat &img, const imgOperation &op );
+    void show_histogram(std::string const& name, cv::Mat1b const& image);
 
 }

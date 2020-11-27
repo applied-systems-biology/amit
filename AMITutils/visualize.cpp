@@ -127,9 +127,8 @@ namespace visual {
             cv::HoughLines(dst, lines, 1, CV_PI/180, elem, 0, 0 ); // runs the actual detection
             
             // Draw the lines
-            for( size_t i = 0; i < lines.size(); ++i )
-            {
-                float rho = lines[i][0], theta = lines[i][1];
+            for(auto & i : lines) {
+                float rho = i[0], theta = i[1];
                 cv::Point pt1, pt2;
                 double a = cos(theta), b = sin(theta);
                 double x0 = a*rho, y0 = b*rho;
@@ -150,9 +149,7 @@ namespace visual {
             cv::HoughLinesP(dst, linesP, 1, CV_PI/180, elem, singlePrecision, kernel_size); //100, 5 ); // runs the actual detection
             
             // Draw the lines
-            for( size_t i = 0; i < linesP.size(); i++ )
-            {
-                cv::Vec4i l = linesP[i];
+            for(auto l : linesP) {
                 cv::line( cdst, cv::Point(l[0], l[1]), cv::Point(l[2], l[3]), cv::Scalar(0,0,255), 3, cv::LINE_AA);
             }
 
@@ -426,8 +423,43 @@ namespace visual {
              
             
         cv::waitKey(0);
-            
-        return;
+   }
+
+    /**
+     * @function show_histogram for grayscaled intensities of an image
+     **/
+    void show_histogram(std::string const& name, cv::Mat1b const& image) {
+
+        // Set histogram bins count
+        int bins = 256;
+        int histSize[] = {bins};
+        // Set ranges for histogram bins
+        float lranges[] = {0, 256};
+        const float* ranges[] = {lranges};
+        // create matrix for histogram
+        cv::Mat hist;
+        int channels[] = {0};
+
+        // create matrix for histogram visualization
+        int const hist_height = 256;
+        cv::Mat3b hist_image = cv::Mat3b::zeros(hist_height, bins);
+
+        cv::calcHist(&image, 1, channels, cv::Mat(), hist, 1, histSize, ranges, true, false);
+
+        double max_val=0;
+        minMaxLoc(hist, 0, &max_val);
+
+        // visualize each bin
+        for(int b = 0; b < bins; b++) {
+            float const binVal = hist.at<float>(b);
+            int   const height = cvRound(binVal*hist_height/max_val);
+            cv::line
+                    ( hist_image
+                            , cv::Point(b, hist_height-height), cv::Point(b, hist_height)
+                            , cv::Scalar::all(255)
+                    );
+        }
+        cv::imshow(name, hist_image);
     }
 
 }

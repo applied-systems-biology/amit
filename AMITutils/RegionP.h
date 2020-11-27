@@ -26,7 +26,7 @@ class RegionP : public Region{
 		std::vector<int> deadFungiIDs;
 		std::vector<int> phagocytosisIDs;
 
-		cell_class::pathogen klassP;
+		cell_class::interaction klassP;
 
 	public:
 		RegionP();
@@ -50,7 +50,7 @@ class RegionP : public Region{
 		void computeCentroidFromGrayPixels();
 		void computeCentroidFromGreenPixels();
 
-		cell_class::pathogen getClassP();
+		cell_class::interaction getClassP();
 		int getAreaGray();
 		cv::Scalar getCentroidScalar();
 		cv::Point getCentroidPoint();
@@ -71,7 +71,7 @@ class RegionP : public Region{
 		void removeLastPhID();
 		void removePhIDs();
 
-		void setClassP(cell_class::pathogen c);
+		void setClassP(cell_class::interaction c);
 		void setIState(int state);
 		void setKlass(cell_class::immune k);
 		void setFCState(bool fc);

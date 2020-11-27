@@ -89,15 +89,7 @@ void RegionP::addPhagocytosisID(int id){
 void RegionP::addPhagocytosisIDPos(int id, int pos){
 
 	if(std::find(this->phagocytosisIDs.begin(), this->phagocytosisIDs.end(), id ) == this->phagocytosisIDs.end()){
-//		for(unsigned int i = 0; i < this->phagocytosisIDs.size(); i++){
-//			cout << this->phagocytosisIDs.at(i) << ", ";
-//		}
-//		cout << endl;
 		this->phagocytosisIDs.insert( this->phagocytosisIDs.begin() + pos, id);
-//		for(unsigned int i = 0; i < this->phagocytosisIDs.size(); i++){
-//			cout << this->phagocytosisIDs.at(i) << ", ";
-//		}
-//		cout << endl;
 	}
 	else{
 		std::vector<int>::iterator found = std::find(this->phagocytosisIDs.begin(), this->phagocytosisIDs.end(), id );
@@ -202,9 +194,9 @@ void RegionP::computeCentroidFromGreenPixels(){
 }
 
 /**
- * @return class of one of the 5 phagocythosis types
+ * @return class of one of the 5 phagocythosis types 
  */
-cell_class::pathogen RegionP::getClassP(){
+cell_class::interaction RegionP::getClassP(){
 	return this->klassP;
 }
 
@@ -212,8 +204,8 @@ cell_class::pathogen RegionP::getClassP(){
 // if( fabs( area ) >= (double) p){
 //     cv::drawContours(dst, contours, i, cv::Scalar(255), -1);
 // }
-int RegionP::getAreaGray(){
-	return this->region_pixels.size() - this->green_region_pixels.size();
+int RegionP::getAreaGray(){ 
+	return this->region_pixels.size() - this->green_region_pixels.size(); 
 }
 
 /**
@@ -290,18 +282,18 @@ void RegionP::removeFungiIds(){
 
 
 void RegionP::removeLastPhID(){
-	if(this->phagocytosisIDs.size() > 0){
+	if(!this->phagocytosisIDs.empty()){
 		this->phagocytosisIDs.pop_back();
 	}
 }
 
 void RegionP::removePhIDs(){
-	if(this->phagocytosisIDs.size() > 0){
+	if(!this->phagocytosisIDs.empty()){
 		this->phagocytosisIDs.resize(0);
 	}
 }
 
-void RegionP::setClassP(cell_class::pathogen c){
+void RegionP::setClassP(cell_class::interaction c){
 	this->klassP = c;
 }
 

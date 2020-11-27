@@ -53,11 +53,37 @@ namespace ImageProcessingToolbox
     }
 
     /**
+    * structure disk-kernel for morphological operations
+    *
+    * @return kernel in format: CV_8U
+    */
+    cv::Mat create_disk(int radius) {
+
+        cv::Mat1b result { cv::Size(radius * 2 + 1, radius * 2 + 1), 0 };
+
+        const int c = result.rows / 2;
+        for(int y = 0; y < result.rows; ++y) {
+            auto *row = result[y];
+            for(int x = 0; x < result.cols; ++x) {
+                if(std::pow(x - c, 2) + std::pow(y - c, 2) < radius * radius) {
+                    row[x] = 255;
+                }
+            }
+        }
+
+        cv::divide(result, 255, result);
+
+        return result;
+    }
+
+
+    /**
     * structure elements for morphological operations
     *
     * @return kernel in format: CV_8U
     */
     cv::Mat createKernel(const std::string kernelType){
+
         cv::Mat kernel;
         if (kernelType == "disk3"){
             kernel = cv::Mat::ones( cv::Size(5,5), CV_32F  ); // =strel('disk', 3);
@@ -284,58 +310,6 @@ namespace ImageProcessingToolbox
 
         dst.convertTo( dst , CV_8UC1 );
 
-        /* // given a black and white image, first find all of its contours; CV_8UC1 - type necessary 
-        cv::Mat src_temp = src.clone();
-        src_temp.convertTo( src_temp , CV_8UC1 );
-
-        std::vector<std::vector<cv::Point> > contours;
-        std::vector<cv::Vec4i> hierarchy;
-        cv::findContours(src_temp, contours, hierarchy, CV_RETR_LIST, cv::CHAIN_APPROX_SIMPLE);
-        
-        int width = src.cols;
-        int height = src.rows;
-
-        // ID list of contours that touch the border
-        std::vector<int> contourList;
-
-        // for each counter
-        for(size_t i = 0; i < contours.size(); ++i)
-        {
-            // get the i'th contour
-            std::vector<cv::Point> cnt = contours[i];
-
-            // look at each point in the contour
-            for(size_t j = 0; j < cnt.size(); ++j)
-            {
-                cv::Point pt = cnt[j];
-                int rowCnt = pt.x;
-                int colCnt = pt.y;
-
-                // if point is within the radius of the border, remove contour
-                bool check1 = (rowCnt >= 0 && rowCnt < conn) || (rowCnt >= height-1-conn && rowCnt < height);
-                bool check2 = (colCnt >= 0 && colCnt < conn) || (colCnt >= width-1-conn && colCnt < width);
-
-                if (check1 || check2)
-                    contourList.push_back(i);                
-            }       
-        }
-        
-        for(size_t c = 0; c < contourList.size(); ++c)
-        {            
-            try
-            {
-                cv::drawContours(src_temp, contours, c, cv::Scalar(255), -1);
-            }
-            catch(const std::exception& e)
-            {
-                //std::cerr << e.what() << '\n';
-                //std::cout << "OpenCV Error: Assertion failed (0 <= contourIdx && contourIdx < (int)last) in drawContours: " << contourList[c] << std::endl;
-                continue;
-            }            
-        }
-        // copy and convert result image to dst
-        //src_temp.convertTo( src_temp , CV_32F );
-        src_temp.copyTo(dst); */
     }
 
     /**
@@ -432,13 +406,13 @@ namespace ImageProcessingToolbox
      */
     void imbinarize(const cv::Mat &src, cv::Mat1b &dst, const double &globThreshold, const bool &foregroundBright, const int &offset, const float &sensitivity){
         if (globThreshold > 0){
-            // global thresholding
-            double threshold = 255 * globThreshold;;
+            // global thresholding for the range [0,255]
+            double threshold = globThreshold;
             dst = src > threshold;
         }
         else
         {
-            // global thresholding
+            // local thresholding
             // compute ~1/8 of image size for the neighborhood, take care for odd value
             int kSizeR = 2 * std::floor(src.rows/16) + 1;
             int kSizeC = 2 * std::floor(src.cols/16) + 1;
@@ -477,15 +451,6 @@ namespace ImageProcessingToolbox
 
         // get connected components     
         nLabels = cv::connectedComponents( src, dst, connectivity, CV_16U);
-
-        /// to visualize all labels
-//        cv::Mat label;
-//        int n_la = connectedComponents(src, label, 8, CV_16U);
-//
-//        cv::Mat seeMyLabels;
-//        normalize(label, seeMyLabels, 0, 255, cv::NORM_MINMAX, CV_8U);
-
-        // std::cout << "Number of connected components/labels = " << nLabels << std::endl;
                 
     }
 
@@ -596,11 +561,7 @@ namespace ImageProcessingToolbox
                 cv::drawContours( drawing, contours, i, color, 2, 8, hierarchy, 0, cv::Point() );
                 circle( drawing, mc[i], 4, color, -1, 8, 0 );
             }
-
-            /// Show in a window
-            // namedWindow( "Contours", CV_WINDOW_AUTOSIZE );
-            // imshow( "Contours", drawing );
-
+            
             /// Calculate the area with the moments 00 and compare with the result of the OpenCV function
             //printf("\t Info: Area and Contour Length \n");
             for( size_t i = 0; i < contours.size(); ++i ) {
@@ -677,20 +638,6 @@ namespace ImageProcessingToolbox
                 }                
             }
 
-            // remove objects which touch the border of the image
-            // for (size_t i = 0; i < object_coordinates.size(); i++)
-            // {
-            //     cv::Rect bounding_rect = cv::boundingRect(object_coordinates[i]);
-            //     cv::Rect test_rect = bounding_rect & cv::Rect(1, 1, src_temp.cols - 2, src_temp.rows - 2);
-            //     if (bounding_rect != test_rect)
-            //     {
-            //         cv::drawContours(src_temp, object_coordinates, (int)i, cv::Scalar(0),-1);
-            //     }
-            // }   
-
-            // variante 2: find contours (not recommended) src must be binary image, just returns the contour-pixels
-            // std::vector<cv::Vec4i> hierarchy;            
-            // cv::findContours( src_temp, object_coordinates, hierarchy, CV_RETR_TREE, CV_CHAIN_APPROX_SIMPLE, cv::Point(0, 0) );
         }
         else
         {
@@ -714,11 +661,28 @@ namespace ImageProcessingToolbox
     }
 
     /**
-     * This function performs an standard deviation filter 
+     * This function performs an standard deviation map
      * on a specified neighborhood on normalized image [0,1]
      */
     void stdfilt(const cv::Mat &src, cv::Mat &dst){
-        // define the output matrix
+
+        cv::Mat src_temp, img_mu, img_mu2;
+
+        src.convertTo(src_temp, CV_32F);
+
+        blur(src_temp, img_mu, cv::Size(3, 3));
+        blur(src_temp.mul(src_temp), img_mu2, cv::Size(3, 3));
+
+        cv::sqrt(img_mu2 - img_mu.mul(img_mu), dst);
+
+    }
+
+    /**
+     * This function performs an standard deviation filtering
+     */
+    void stdfilter(const cv::Mat &src, cv::Mat &dst){
+
+        /// remark: the following code perform a standard-deviation filter not the required standard-deviation map regarding to it's input imag
         dst = src.clone();
         // find out the mean image
         cv::blur(src, dst, cv::Size(3,3));
@@ -726,6 +690,7 @@ namespace ImageProcessingToolbox
         cv::absdiff(dst, src, dst);
         // square to get std matrix
         cv::pow(dst, 2.0, dst);
+
     }
 
     void bwlookup(const cv::Mat & in, cv::Mat & out, const cv::Mat & lut, int bordertype, cv::Scalar px ) {
@@ -782,17 +747,17 @@ namespace ImageProcessingToolbox
      * and store the result in the dst image. 
      * The formula that will be apply is the following one: 
      * dst(x, y) = u + max(0, s^2 - v^2)(src(x, y) - u) / max(s^2, v^2) 
-     * https://github.com/prittt/AdaptiveWienerFilter/blob/master/WienerFilter.h
      */
     void wiener2(const cv::Mat &src, cv::Mat &dst, const cv::Size &kSize, double &noiseVariance) {
+
         assert(("Invalid block dimensions", kSize.width % 2 == 1 && kSize.height % 2 == 1 && kSize.width > 1 && kSize.height > 1));
         assert(("src and dst must be one channel grayscale images", src.channels() == 1, dst.channels() == 1));
         
         int width = src.cols;
         int height = src.rows;
 
-        dst = cv::Mat1b( src.size() );
-        
+        dst = cv::Mat( src.size(), src.type() );
+
         cv::Mat1d means, sqrMeans, variances, avgVarianceMat;
         
         cv::boxFilter(src, means, CV_64F, kSize, cv::Point(-1,-1), true, cv::BORDER_REPLICATE);

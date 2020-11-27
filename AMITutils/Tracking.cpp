@@ -205,7 +205,6 @@ namespace Tracking
                     track.add(*reg_it);
 
                     /// find successor regions in the following frames, if frame is NOT the last frame
-//                    Tracking::findNext(*reg_it, regions, t, id, track);
                     if (t != t_max-1) {
                         Tracking::findNext(*reg_it, regions, t, id, track);
                     }

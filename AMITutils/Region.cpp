@@ -37,16 +37,29 @@ namespace cell_class
         }
     }
 
-	pathogen setCellTypeP(int c){
+    std::string getCellClassP(interaction c){
+        switch(c)
+        {
+            case interaction::FUNGAL_CELLS                      : return "FUNGAL_CELLS";
+            case interaction::IMMUNE_TOUCHING_PATHOGEN          : return "IMMUNE_TOUCHING_PATHOGEN";
+            case interaction::PHAGOCYTOSED                      : return "PHAGOCYTOSED";
+            case interaction::PHAGOCYTOSED_INTERACTION_IMMUNE   : return "PHAGOCYTOSED_INTERACTION_IMMUNE";
+            case interaction::PHAGOCYTOSED_INTERACTION_PATHOGEN : return "PHAGOCYTOSED_INTERACTION_PATHOGEN";
+            case interaction::DEAD_CELLS                        : return "DEAD_CELLS";
+            default                                             : return "FUNGAL_CELLS";
+        }
+    };
+
+    interaction setCellTypeP(int c){
 		switch(c)
         {
-            case 1  : return pathogen::NON_INTERACTING;
-            case 2  : return pathogen::IMMUNE_TOUCHING_PATHOGEN;
-            case 3  : return pathogen::PHAGOCYTOSED;
-			case 4  : return pathogen::PHAGOCYTOSED_INTERACTION_IMMUNE;
-            case 5  : return pathogen::PHAGOCYTOSED_INTERACTION_PATHOGEN;
-			case 6  : return pathogen::UNDEFINED;
-            default : return pathogen::NON_INTERACTING;
+            case 1  : return interaction::FUNGAL_CELLS;
+            case 2  : return interaction::IMMUNE_TOUCHING_PATHOGEN;
+            case 3  : return interaction::PHAGOCYTOSED;
+			case 4  : return interaction::PHAGOCYTOSED_INTERACTION_IMMUNE;
+            case 5  : return interaction::PHAGOCYTOSED_INTERACTION_PATHOGEN;
+			case 6  : return interaction::DEAD_CELLS;
+            default : return interaction::FUNGAL_CELLS;
         }
 	}
 

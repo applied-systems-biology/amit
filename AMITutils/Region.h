@@ -25,18 +25,19 @@ namespace cell_class
         CLUSTER = 2 
     };
 
-    enum class pathogen {
-        NON_INTERACTING = 1,
+    enum class interaction {
+        FUNGAL_CELLS = 1,
         IMMUNE_TOUCHING_PATHOGEN = 2,
         PHAGOCYTOSED = 3,
         PHAGOCYTOSED_INTERACTION_IMMUNE = 4,
         PHAGOCYTOSED_INTERACTION_PATHOGEN = 5,
-        UNDEFINED = 6
+        DEAD_CELLS = 6
     };
 
     std::string getCellClass(immune c);
     immune setCellType(int c);
-    pathogen setCellTypeP(int c);
+    std::string getCellClassP(interaction c);
+    interaction setCellTypeP(int c);
 
 };
 
@@ -75,12 +76,6 @@ class Region
         std::vector<cv::Vec2i> region_pixels; /**< set of pixels defining the region */
         std::vector<cv::Vec2i> contour_pixels; /**< set of pixels defining the contour*/
 
-//        enum class RClass {
-//            NOISE = 0,
-//            SINGLE = 1,
-//            CLUSTER = 2
-//        };
-        
         cv::Scalar color_border; /**< color of region border */
 
         // public: properties / class - methods

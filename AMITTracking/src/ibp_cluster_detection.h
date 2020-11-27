@@ -148,9 +148,24 @@ struct feature_data
             }
             /// 2. check if a cluster split occur (Out > 1) and a cluster remains (IDout: type = 2)
             else if (this->Out[i] > 1 and this->type[i] == 2 ){
-                std::cout << "INFO: a cluster split occur and a cluster remains (IDout: type = 2) i: " << i << std::endl;
+                std::cout << "\t[INFO]: a cluster split occur and a cluster remains (IDout: type = 2) i: " << i << "\tt: " << this->t[i] << std::endl;
 
                 /// CAUTION: special case when object jumps from one cluster to another
+
+                /// 2.1 check for only 2 outgoing cells: number-regions in the splitted cluster == n, check if on of the 2 outgoing cells is a single cell
+                /// => #-cells in remaining cluster: n (splitted cluster) - 1 (one remaining single cell) = n-1
+                if ( this->Out[i] == 2 ){
+                    for (size_t i_tmp = 0; i_tmp < this->ID.size(); ++i_tmp) {
+                        /// check that the other remaining cell of the splitted cluster is a single cell
+                        if (this->ID[i_tmp] == id and this->IDout[i_tmp] != id and this->Out[i_tmp] == 2 and this->type[i_tmp] == 1 and this->num_regions[i_tmp] == 1) {
+                            /// remaining cluster has (n-1) cells: continue
+                            id_numRegions[ this->IDout[i] ] = id_numRegions[ id ] - 1;
+                            break;
+                        }
+                    }
+                    continue;
+                }
+
 
                 /// assign generation cluster of backward projection to split-cluster in forward projection
                 int num_regions_bw = id_numRegions_bw[ objList_bw.ID[i_bw] ];
@@ -261,7 +276,7 @@ namespace ibp_cluster_detection
     void clustMasking(const feature_data &objList, const cv::Size &S, const int &fN, std::vector<cv::Mat> &bw);
 
     void clustDetectRun(const std::vector<cv::Mat> &images, std::vector<cv::Mat> &objMaps, feature_data &objList_final, const float &Thr, const bool &FLAG_DEBUG);
-    void assign_ibp_class_to_region(std::vector<std::vector<Region>> &regions, const std::vector<cv::Mat> &objMaps, const int &DELAY, const std::string &INPUTDIR_COLOR, const std::string &OUTDIR, const bool &FLAG_DEBUG);
+    void assign_ibp_class_to_region(std::vector<std::vector<Region>> &regions, const std::vector<cv::Mat> &objMaps, const std::string &INPUTDIR_COLOR, const std::string &OUTDIR, const bool &FLAG_DEBUG);
 
     /// functions to split the detected clusters based on an watershed segmentation
     int setRandomMarker(const cv::Mat &src, cv::Mat &dst, const int &num_regions);

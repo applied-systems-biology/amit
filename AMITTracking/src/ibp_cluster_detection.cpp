@@ -12,9 +12,8 @@
 
 #include "ibp_cluster_detection.h"
 #include <iostream>
-#include <math.h>
+#include <math.h>  
 #include <opencv2/imgproc.hpp>
-#include <numeric>
 #include <chrono>
 #include "IOputs.h"
 #include "Outputs.h"
@@ -26,28 +25,28 @@ using std::chrono::duration;
 namespace IPT = ImageProcessingToolbox;
 
 
-namespace ibp_cluster_detection
-{
-
+namespace ibp_cluster_detection 
+{   
+ 
     /**
      * Pre-process image data by remove small objects and keep seperated images as labels for all consecutive frames.
-     *
+     *      
      * @param B all binary images.
      * @param L resulting label images.
-     * @param objN resulting number of regions per frame.
+     * @param objN resulting number of regions per frame. 
      */
     void getImgData(std::vector<cv::Mat> &B, std::vector<cv::Mat> &L, std::vector<int> &objN){
-
-        for (size_t i = 0; i < B.size(); i++) {
+        
+        for (auto & b : B) {
 
             // label all objects and extract the number of objects per frame
             cv::Mat1b tmp_bwlabel;
             int n_labels;
-            IPT::bwlabel(B[i], tmp_bwlabel, n_labels, 8);
+            IPT::bwlabel(b, tmp_bwlabel, n_labels, 8);
 
             L.push_back(tmp_bwlabel);
-
-            // subtract 1 because of background will be counted
+            
+            // subtract 1 because of background will be counted 
             objN.push_back(n_labels - 1);
 
         }
@@ -56,7 +55,7 @@ namespace ibp_cluster_detection
 
     /**
      * Perform cluster detection in forward or backwards projection.
-     *
+     * 
      * @param B_tmp all binary images.
      * @param L_tmp all images within labeled objects.
      * @param objN_tmp all number of regions per frame.
@@ -64,29 +63,29 @@ namespace ibp_cluster_detection
      * @param S sampling of the input images.
      * @param t0 number of the frame where the detections will be started from (usually =0).
      * @param direct direction of the projection: forward (direct=true) or backwards (direct=false).
-     * @param bw resulting image-masks for each object being a cluster.
+     * @param bw resulting image-masks for each object being a cluster. 
      * @param objList object information for all frames.
      * @param Thr threshold for pixel fraction in percents.
      */
     void clustDetect(const std::vector<cv::Mat> &B_tmp, const std::vector<cv::Mat> &L_tmp, const std::vector<int> &objN_tmp, const int &fN, const cv::Size &S, const int &t0, const bool &direct, std::vector<cv::Mat> &bw, feature_data &objList, const float &Thr) {
-
+        
         /// distinguish between forward and backward computation
         std::vector<cv::Mat> B( B_tmp );
         std::vector<cv::Mat> L( L_tmp );
         std::vector<int> objN( objN_tmp );
-
+        
         if (!direct) {
             std::reverse(B.begin(), B.end());
             std::reverse(L.begin(), L.end());
-            std::reverse(objN.begin(), objN.end());
-        }
+            std::reverse(objN.begin(), objN.end());               
+        }           
 
         ///// cluster detect init
 
         //  initial labeling, each object on 1st image will get unique ID
         cv::Mat1w L0 = L[t0];
         int num0 = objN[t0];
-
+        
         /// initialisation: list of linear indices of the pixels in the region, returned as a p-element vector
         // about array indexation in mlab run command "doc ind2sub"
         std::vector<std::vector<cv::Point>> objList0_regionProps;
@@ -123,9 +122,9 @@ namespace ibp_cluster_detection
 
         ///// prealloc memory and copy objList0 to objList, where all variables for all objects will be stored
         objList = objList0;
-
+        
         ///// run cycle (from objects objN[t] to objN[t+1])
-
+        
         // from 2nd frame to frame with index fN
         for (int t = t0+1; t < fN; t++) {
 
@@ -133,7 +132,7 @@ namespace ibp_cluster_detection
             feature_data objListCur;
 
             ibp_cluster_detection::imgOverlap(B[t], L0, num0, objListCur, Thr);
-
+            
             std::vector<int> tmp = std::vector<int> ( objListCur.ID.size() , t);
             objListCur.t = tmp;
 
@@ -143,30 +142,30 @@ namespace ibp_cluster_detection
         }
 
         // a 3D array of binary masks
-        ibp_cluster_detection::clustMasking(objList, S, fN, bw);
+        ibp_cluster_detection::clustMasking(objList, S, fN, bw);   
 
         // reverse in case of backward
         if (!direct) {
-            std::reverse(bw.begin(), bw.end());
-        }
+            std::reverse(bw.begin(), bw.end());            
+        }             
 
     }
 
     /**
      * Analysis of overlapping for two consequent images.
-     *
+     * 
      * @param Bw binary image of current frame (CV_8UC1 image, input parameter).
      * @param L0 indexed image from previous frame (mlab: L0 = L2, input parameter).
      * @param cellsIDc counter for IDs for each object.
-     * @param featsL1 objects history for current frame (output parameter).
+     * @param featsL1 objects history for current frame (output parameter). 
      * @param Thr threshold for pixel fraction in percents.
      */
     void imgOverlap(const cv::Mat &Bw, cv::Mat &L0, int &cellsIDc, feature_data &featsL1, const float &Thr) {
-
+    
         // labeling of binary image
         cv::Mat L1;
         int num1;
-
+        
         IPT::bwlabel(Bw, L1, num1, 8);
         // subtract 1 because of background will be counted, but discard background
         num1 -= 1;
@@ -176,7 +175,7 @@ namespace ibp_cluster_detection
         IPT::regionprops(L1, featsL1_regionProps, "PixelIdxList");
 
         featsL1.PixelIdxList = featsL1_regionProps;
-
+        
         // fill with (default) value: {1}
         featsL1.In = std::vector<int> (num1, 1);
         featsL1.Out = std::vector<int> (num1, 1);
@@ -184,7 +183,7 @@ namespace ibp_cluster_detection
         featsL1.num_regions = std::vector<int> (num1, 1);
         // fill with vector: when a cluster occurs vector has more than one value
         featsL1.IDin = std::vector<std::vector<int>> (num1, std::vector<int>());
-
+        
         ///// detect in
         /// initialisation of an output indexed image
         cv::Mat L2 = cv::Mat::zeros(Bw.size(), CV_16UC1);
@@ -202,11 +201,11 @@ namespace ibp_cluster_detection
             for(size_t p = 0; p < u_tmp.percent.size(); p++) {
                 if(u_tmp.percent[p] > Thr){
                     u.push_back(  u_tmp.value[p] );
-                }
+                }            
             }
 
             // if length of vector u
-            if ( u.size() == 1 )
+            if ( u.size() == 1 ) 
             {
                 // and 1st element of u>0 then cell stay still and ID should not change
                 if (u[0] > 0){
@@ -217,7 +216,7 @@ namespace ibp_cluster_detection
                 else {
                     cellsIDc++;
                     featsL1.ID.push_back( cellsIDc );
-                    featsL1.IDin[i].push_back( 0 );
+                    featsL1.IDin[i].push_back( 0 );                                       
                 }
             }
             else if ( u.size() == 2 )
@@ -248,62 +247,62 @@ namespace ibp_cluster_detection
                 // which may contain background pixels
                 if (u[0] == 0){
                     // add the number of region when a cluster occur, added by PP
-                    featsL1.num_regions[i] = u.size() - 1; // TODO
+                    featsL1.num_regions[i] = u.size() - 1;
 
                     featsL1.In[i] = u.size() - 1;
-
+                    
                     // add all elements from second to last
                     for (size_t k = 1; k < u.size(); k++){
                         featsL1.IDin[i].push_back( u[k] );
                     }
-                }
+                } 
                 // or may not
                 else {
                     // add the number of region when a cluster occur, added by PP
-                    featsL1.num_regions[i] = u.size(); // TODO
+                    featsL1.num_regions[i] = u.size();
 
                     featsL1.In[i] = u.size();
                     featsL1.IDin[i].insert( featsL1.IDin[i].end(), u.begin(), u.end() );
                 }
-
-            }
-
+        
+            } 
+            
         }
 
-
+        
         ///// detect out
         // if cells doesn't interact then output IDs should be the same
-        featsL1.IDout = featsL1.ID;
-
+        featsL1.IDout = featsL1.ID; 
+        
         // however it must be checked with the table of IDs occurence frequency
         IPT::tabulate Tbl_ID( featsL1.ID );
 
         /// Version 2: looking for IDs which occure more than one time (object from previouse frame splits to few objects in current frame)
         std::vector<int> listID_tmp, listIDin_tmp, featsL1_IDin_tmp, listID;
-
+        
         for(size_t c = 0; c < Tbl_ID.count.size(); c++) {
             if(Tbl_ID.count[c] > 1){
                 listID_tmp.push_back( Tbl_ID.value[c] );
-            }
+            }            
         }
-
+        
         // If there are more that one object have a contribution from one object from previous frame (cluster splitted),
         // then all these objects must receive new IDs
 
         // iterate through all list of IDin because IDin can contain several values (lists)
-        for(size_t obj = 0; obj < featsL1.IDin.size(); obj++) {
-            // collect all IDs, where IDin > 1
-            for(size_t id_in = 0; id_in < featsL1.IDin[obj].size(); id_in++) {
-                featsL1_IDin_tmp.push_back( featsL1.IDin[obj][id_in]  );
+        for(auto & obj : featsL1.IDin) {
+            // collect all IDs, where IDin > 1 
+            for(int & id_in : obj) {
+                featsL1_IDin_tmp.push_back( id_in  );
             }
         }
 
         IPT::tabulate Tbl( featsL1_IDin_tmp );
-
+        
         for(size_t c = 0; c < Tbl.count.size(); c++) {
             if(Tbl.count[c] > 1){
                 listIDin_tmp.push_back( Tbl.value[c] );
-            }
+            }            
         }
 
         // look for unique IDs by concatenate the two listIDs
@@ -317,15 +316,15 @@ namespace ibp_cluster_detection
         for(size_t i = 0; i < listID.size(); i++) {
             if(listID[i] <= 0){
                 listID.erase( listID.begin() + i );
-            }
+            }            
         }
-
+        
         // handle for non-empty listID
-        if ( ! listID.empty() ){
+        if ( ! listID.empty() ){ 
             for(int my_id : listID) {
                 // find indices of listID in the ID's - features
                 std::vector<int> ids;
-
+                
                 for (size_t j = 0; j < featsL1.ID.size(); j++) {
                     if (featsL1.ID[j] == my_id ) {
                         ids.push_back( j );
@@ -336,19 +335,19 @@ namespace ibp_cluster_detection
                 for (size_t j = 0; j < ids.size(); j++) {
                     // and replace them with new IDs
                     cellsIDc++;
-
+                    
                     featsL1.IDout[ ids[j] ] = cellsIDc;
                     featsL1.Out[ ids[j] ] = ids.size();
                 }
-
+        
             }
         }
 
         // an output indexed image for current frame
         for (int i = 0; i < num1; i++){
             for (size_t j = 0; j < featsL1.PixelIdxList[i].size(); j++) {
-                L2.at<ushort>( featsL1.PixelIdxList[i][j] ) = featsL1.IDout[i];
-            }
+                L2.at<ushort>( featsL1.PixelIdxList[i][j] ) = featsL1.IDout[i];  
+            }            
         }
 
         // parameter L2 corresponds L0 indexed image from previous frame ( mlab: L0 = L2)
@@ -359,16 +358,16 @@ namespace ibp_cluster_detection
 
     /**
      * Build a 3D array of binary masks where each foreground object indicates a cluster.
-     *
+     * 
      * @param objList objects history for the current frame.
      * @param S size of image in x and y direction (sampling).
      * @param fN number of frames which corresponds to the 3-dimension like a z-stack.
-     * @param bw resulting binary masks which indicate the clusters within (3D mask).
+     * @param bw resulting binary masks which indicate the clusters within (3D mask).  
      */
     void clustMasking(const feature_data &objList, const cv::Size &S, const int &fN, std::vector<cv::Mat> &bw){
 
         std::vector<int> idxIn;
-
+        
         /// select all objects which have contribution from at least two objects from previous frame
         for (size_t i = 0; i < objList.In.size(); i++){
             if (objList.In[i] > 1) {
@@ -393,65 +392,65 @@ namespace ibp_cluster_detection
 
         // concatenate indices
         std::vector<int> ids = idIn;
-
+        
         // fill the 3D-mask
         for (size_t i = 0; i < ids.size(); i++)
         {
             std::vector<int> idx;
             for (size_t j = 0; j < objList.ID.size(); j++)
-            {
+            {        
                 if (objList.IDout[j] == ids[i]){
                     idx.push_back( j );
                 }
             }
 
-            for (size_t j = 0; j < idx.size(); j++)
+            for (int j : idx)
             {
                 // select objList[idx[j]].t channel / stack where a cluster occurs at timepoint t
-                cv::Mat tmp = bw[objList.t[ idx[j] ]];
+                cv::Mat tmp = bw[objList.t[ j ]];
 
                 // set corresponding pixel-values where a cluster is located to 1 (255)
-                for(cv::Point pixel: objList.PixelIdxList[ idx[j] ]) {
+                for(cv::Point pixel: objList.PixelIdxList[ j ]) {
                     tmp.at<uchar>( pixel ) = 255;
                 }
 
                 // assign the corresponding stack / mask
-                bw[objList.t[ idx[j] ]] = tmp;
+                bw[objList.t[ j ]] = tmp;
             }
-
+            
         }
 
     }
 
     /**
-     * Perform the main cluster detection method for all given frames with binary images.
+     * Perform the main cluster detection method for all given frames with binary images. 
      *
-     * @param images binary input images.
+     * @param images binary input images. 
      * @param objMaps resulting masks for all frames where objects with intensity 127 indicates single cells and intensity value 255 to be a cluster (0 = noise).
      * @param objList_final combined list with history information for each object.
      * @param Thr threshold for pixel fraction in percents.
      * @param FLAG_DEBUG verbose parameter.
-     */
+     */    
     void clustDetectRun(const std::vector<cv::Mat> &images, std::vector<cv::Mat> &objMaps, feature_data &objList_final, const float &Thr, const bool &FLAG_DEBUG){
 
         // number of frames to analyse
         const int fN = images.size();
-
+        
         // the resolution of input images
-        cv::Size S = images[0].size();
-
+        cv::Size S = images[0].size();  
+        
         /// pre-processing: load binary images,remove small objects and label the rest of it
         std::vector<cv::Mat> B( images );
         std::vector<cv::Mat> L;
 
         // number ob objects per each frame
-        std::vector<int> objN;
-
+        std::vector<int> objN;         
+        
         ibp_cluster_detection::getImgData(B, L, objN);
-
+        
         // start time measurement
         auto start = system_clock::now();
-
+        
         ///// cluster detection: forward passage, from the 1st frame to the last one
         feature_data objList;
 
@@ -461,7 +460,7 @@ namespace ibp_cluster_detection
         ibp_cluster_detection::clustDetect(B, L, objN, fN, S, 0, true, bwF, objList, Thr);
 
         std::cout << " [3.0.2] clustDetectRun: start backward cluster detection" << std::endl;
-
+        
         /// cluster detection: backward passage, from the last frame to the 1st one
         feature_data objList_backwards;
 
@@ -471,10 +470,10 @@ namespace ibp_cluster_detection
         std::cout << " [3.0.3] clustDetectRun: finish cluster detection - perform overlay" <<  std::endl;
         std::cout << " [3.0.4] clustDetectRun: bwF.size: " << bwF.size() << "\tbwB.size: " << bwB.size() << std::endl;
 
-        ///// clear cv::Mat vectors that are no longer needed to free memory
+        ///// clear cv::Mat vectors that are no longer needed to free memory  
         L.clear();
 
-        // array of masks of clusters for each frame = element by element logical multiplication
+        // array of masks of clusters for each frame = element by element logical multiplication 
         // of two masks for each time frame
         std::vector<cv::Mat> clustM;
         clustM.reserve( fN );
@@ -486,10 +485,10 @@ namespace ibp_cluster_detection
             clustM.push_back( dst );
         }
 
-        ///// clear cv::Mat vectors that are no longer needed to free memory
+        ///// clear cv::Mat vectors that are no longer needed to free memory 
         bwF.clear();
         bwB.clear();
-
+        
         // array of masks of single objects for each frame = element by element logical multiplication of
         // all object masks and inverted masks of clusters for each time frame
         std::vector<cv::Mat> singlM;
@@ -500,11 +499,11 @@ namespace ibp_cluster_detection
             cv::bitwise_not( clustM[i], clustM_i_inverted );
 
             cv::bitwise_and(B[i], clustM_i_inverted, dst);
-            singlM.push_back( dst );
+            singlM.push_back( dst );            
         }
 
-        ///// clear cv::Mat vectors that are no longer needed to free memory
-        B.clear();
+        ///// clear cv::Mat vectors that are no longer needed to free memory  
+        B.clear();        
 
         // array of objects maps for each frame: 0 - background, 127 - single, 255 - cluster
         // uint8 - conversion to 8 bit integer type: A.*B - element-by-element multiplication
@@ -513,8 +512,8 @@ namespace ibp_cluster_detection
 
         for (size_t i = 0; i < singlM.size(); i++){
             cv::Mat tmp, dst;
-
-            tmp = singlM[i] - cv::Scalar(128) ;
+            
+            tmp = singlM[i] - cv::Scalar(128) ; 
 
             cv::bitwise_or(clustM[i], tmp, dst);
 
@@ -523,19 +522,24 @@ namespace ibp_cluster_detection
 
         ///// fill info about each object
         std::cout << " [3.0.5] clustDetectRun: objMap.size(): " <<  objMap.size() << "\tID.size(): " <<  objList.ID.size() << std::endl;
-
+                
         for (size_t i = 0; i < objList.ID.size(); i++){
 
             cv::Mat objMapT = objMap[ objList.t[i] ];
-
-            // assign type of region by assign one (first) pixel-value of corresponding pixel
+             
+            // assign type of region by assign one (first) pixel-value of corresponding pixel             
             int pixel_value = (int) objMapT.at<uchar>( objList.PixelIdxList[i][0] );
 
-            // change pixel value in range from {127,255} to {1,2} = { singlecells, cluster}
+            // differ pixel value from {127,255} to {1,2} = { singlecells, cluster}
             if(pixel_value == 127)
                 pixel_value = 1;
-            else
+            else if(pixel_value == 255)
                 pixel_value = 2;
+            else {
+                pixel_value = 1;
+                std::cout << "\t[ERROR] pixel value is neither {127,255}, i: " << i << "\tpixel_value: "
+                          << pixel_value << "\tset default cell_type: " << pixel_value << std::endl;
+            }
 
             objList.type.push_back( pixel_value );
 
@@ -543,7 +547,7 @@ namespace ibp_cluster_detection
 
         ///// determine the number of regions per cluster (single cell = 1)
         objList.getNumberRegions( objList_backwards );
-
+       
         // print total calculation time
         auto end = system_clock::now();
         const double elapsed_seconds = duration<double>(end-start).count();
@@ -567,85 +571,83 @@ namespace ibp_cluster_detection
                           << objList.Out[idx] << "\t; " << objList.t[idx]+1 << "\t; " << objList.type[idx] << "\t; "
                           << objList.num_regions[idx] << std::endl;
             }
-
-        }
+            
+        }        
 
     }
 
     /**
      * Assign the class for each ROI, where the information is taken from the cluster-detection-masks.
-     *
+     * 
      * @param regions regions-per-frames, which contain the variable "klass", that will be assigned to noise, single cells or cluster.
      * @param objList image masks for all frames where objects with intensity 127 indicates single cells and intensity value 255 to be a cluster (0 = noise).
-     * @param DELAY optional delay between binary and original images.
      * @param INPUTDIR_COLOR path where the original gray-scaled images are stored.
      * @param OUTDIR path where the final images with their corresponding classified objects will be stored.
      * @param FLAG_DEBUG verbose parameter.
-     */
-    void assign_ibp_class_to_region(std::vector<std::vector<Region>> &regions, const std::vector<cv::Mat> &objMaps, const int &DELAY, const std::string &INPUTDIR_COLOR, const std::string &OUTDIR, const bool &FLAG_DEBUG){
+     */ 
+    void assign_ibp_class_to_region(std::vector<std::vector<Region>> &regions, const std::vector<cv::Mat> &objMaps, const std::string &INPUTDIR_COLOR, const std::string &OUTDIR, const bool &FLAG_DEBUG){
 
-        // iterate about all frames
-        for (size_t i = 0; i < regions.size(); i++){
+        /// iterate about all frames
+        for (size_t t = 0; t < regions.size(); t++){
 
             if (FLAG_DEBUG){
-                std::cout << " #ROI's - frame: "  << regions[i].size() << " / " << i << std::endl;
-            }
-
+                std::cout << " #-ROI's: " << regions[t].size() << "\tin frame: " << t << std::endl;
+            }            
+            
             std::vector<Region>::iterator reg;
-            // iterate about all regions
-            for(reg = regions[i].begin(); reg != regions[i].end(); reg++){
+            // iterate about all regions            
+            for(reg = regions[t].begin(); reg != regions[t].end(); reg++){
 
                 // select the first pixel of all pixel within the region (center is sometimes not within the region itself)
                 cv::Vec2i region_point = reg->region_pixels[0];
                 // objMaps[i] works, because of the same counter-sequence of objects: column-wise
-                int region_value = objMaps[i].at<uchar>( region_point );
+                int region_value = objMaps[t].at<uchar>( region_point );
 
-                // assign center_value of region accordingly to the class of regions: 0 (should not appear) = background; 127 = single cell; 255 = cluster
-                if (region_value == 0){
-                    // noise / background   = 0
+                /// assign center-value of ROI accordingly to the class of regions:
+                /// { 0 } = background/noise ; { 127 } = single cell; { 255 } = cluster
+                if (region_value == 0 ){
                     reg->setClass( cell_class::immune::NOISE );
                 }
                 else if(region_value == 127){
-                    // single cells         = 1
                     reg->setClass( cell_class::immune::SINGLE );
                 }
                 else if(region_value == 255){
-                    // cluster              = 2
                     reg->setClass( cell_class::immune::CLUSTER );
                 }
                 else{
                     // ERROR: default assignment => default assignment of class <single cell>
-                    std::cout << " CAUTION: center-value of detected ROI is neither associated to background,singlecell,cluster = (0,127,255)" << std::endl;
+                    std::cout << " CAUTION: center-value of detected ROI is neither associated to background, singlecell, cluster = (0,127,255)" << std::endl;
                     reg->setClass( cell_class::immune::SINGLE );
                 }
-
+                
                 if (FLAG_DEBUG){
                     cell_class::immune myclass = reg->getClass();
-                    std::cout << "\tregion-point: " << region_point << "\tregion-value: " << region_value << "\tclass of ROI: " << cell_class::getCellClass(myclass) << std::endl;
+                    std::cout << "\tregion-point: " << region_point << "\tregion-value: " << region_value << "\tclass of ROI: " << cell_class::getCellClass(myclass) << "\t\tROI-area: " << reg->getArea() << std::endl;
                 }
 
             }
-
+            
         }
 
-        // save images with drawn outline dependent on their class
+        // save images with drawn outline dependent on their class 
         if(FLAG_DEBUG){
-			std::string file1 = OUTDIR + "/3_ibp_region_classification/";
-
-            outputs::showClassifiedSegmentedRegions2D(file1, INPUTDIR_COLOR , DELAY, regions, true, false);
+			std::string path_prefix = OUTDIR + "/3_faf_region_classification/";
+			const int delay = 0;
+            
+            outputs::showClassifiedSegmentedRegions2D(path_prefix, INPUTDIR_COLOR , delay, regions, true, false);
 		}
 
     }
 
     /**
      * Determine a specified number of (random) seed points within the cluster.
-     *
+     * 
      * For 1-5 values the following seed points will be generated: top-most, bottom-most, left-most, right-most, center point.
-     * If there are more than 5 points the rest of the points will be generated randomly within the cluster.
+     * If there are more than 5 points the rest of the points will be generated randomly within the cluster. 
      *
      * @param src binary input cut-out image of the cluster.
      * @param dst resulting binary cut-out image within the generated seed points.
-     * @param num_regions of seed points which should be generated.
+     * @param num_regions of seed points which should be generated. 
      * @return number of distinct regions after generating (random) seed points.
      */
     int setRandomMarker(const cv::Mat &src, cv::Mat &dst, const int &num_regions){
@@ -764,7 +766,7 @@ namespace ibp_cluster_detection
                 /// select random seed on eroded cluster ROI to ensure creating random seed points inside the original ROI
                 cv::Mat labels, stats, centroids;
                 (void)connectedComponentsWithStats(src_erode, labels, stats, centroids);
-
+                
                 std::vector<cv::Point> all_pixels;
 
                 /// just select label = 1 (must be just one label because of just cluster is included and 0 = background)
@@ -810,11 +812,11 @@ namespace ibp_cluster_detection
         }
 
         for (const auto & seed_point : seed_points) {
-            cv::circle(dst, seed_point, 1, cv::Scalar(255), 1);
+            cv::circle(dst, seed_point, 0, cv::Scalar(255), 1);
         }
 
         cv::Mat labels;
-        int num_distinct_regions = cv::connectedComponents(dst, labels, 4) - 1;
+        int num_distinct_regions = connectedComponents(dst, labels, 8) - 1;
 
         return num_distinct_regions;
 
@@ -839,7 +841,7 @@ namespace ibp_cluster_detection
         /// blur image to reduce noise
         cv::blur( adapthisteq, blur, cv::Size(3,3) );
 
-        /// detect edges using canny: threshold was figured out via visual::fincContours
+        /// detect edges using canny: threshold was figured out via visual::findContours
         std::vector<std::vector<cv::Point> > contours_canny;
         std::vector<cv::Vec4i> hierarchy_canny;
 
@@ -916,7 +918,7 @@ namespace ibp_cluster_detection
 
         /// compute distinct regions (-1 because the background will be counted)
         cv::Mat labels;
-        int num_distinct_regions = cv::connectedComponents(dst, labels, 4) - 1;
+        int num_distinct_regions = connectedComponents(dst, labels, 8) - 1;
 
         return num_distinct_regions;
 
@@ -932,7 +934,7 @@ namespace ibp_cluster_detection
     int distanceTransformation(const cv::Mat &src, cv::Mat &dst){
 
         /// perform the distance transform algorithm
-        cv::Mat dist, threshold, opening, labels;
+        cv::Mat dist, threshold, opening;
 
         cv::distanceTransform(src, dist, cv::DIST_L2, cv::DIST_MASK_PRECISE);
 
@@ -950,9 +952,10 @@ namespace ibp_cluster_detection
 
         opening.copyTo(dst);
 
-        int num_labels = connectedComponents(dst, labels, 4) - 1;
+        cv::Mat labels;
+        int num_distinct_regions = connectedComponents(dst, labels, 8) - 1;
 
-        return num_labels;
+        return num_distinct_regions;
 
     }
 
@@ -1028,7 +1031,7 @@ namespace ibp_cluster_detection
 
     /**
      * Split the detected clusters based on an watershed segmentation.
-     *
+     * 
      * Identify the detected clusters position and perform the watershed on a cut-out subwindow on such cluster.
      * (0) Perform contrast enhancement and noise removal as used for the ibp::segmentation
      * (1) Extract cluster from ibp_cluster_detection
@@ -1058,8 +1061,8 @@ namespace ibp_cluster_detection
         for (size_t t = 0; t < images_binary.size(); ++t) {
 
             /// (0) Perform contrast enhancement and noise removal as used for the ibp::segmentation
-            cv::Mat sd1 = IPT::createKernel("disk3");
-            cv::Mat sd2 = IPT::createKernel("disk5");
+            cv::Mat sd1 = IPT::create_disk(3);
+            cv::Mat sd2 = IPT::create_disk(5);
 
             cv::Mat Io, Jt, J1, Ic, Jb, img_gray;
             /// sharpen and background correction step 1 (opening,subtract,add)
@@ -1067,7 +1070,7 @@ namespace ibp_cluster_detection
             IPT::imsubtract(images_gray[t], Io, Jt);
             IPT::imadd(images_gray[t], Jt, J1);
 
-            /// sharpening and background correction step 2 (close, 2xsubtract)
+            /// sharpening and background correction step 2 (close, 2x subtract)
             IPT::imclose(images_gray[t], Ic, sd1);
             IPT::imsubtract(Ic, images_gray[t], Jb);
             IPT::imsubtract(J1, Jb, img_gray);
@@ -1095,7 +1098,7 @@ namespace ibp_cluster_detection
                 for (size_t c_img_debug = 0; c_img_debug < contours_all_cells.size(); c_img_debug++)
                     cv::drawContours(img_debug, contours_all_cells, c_img_debug, cv::Scalar(255, 0, 0), 1);
 
-            }
+            }            
 
             ///// iterate over all cluster and draw the regions /////
             for (size_t idx = 0; idx < idx_cluster.size(); ++idx) {
@@ -1104,7 +1107,7 @@ namespace ibp_cluster_detection
 
                 /// (2) Create a cluster-image-mask and build overlay, that the later bounding box will be taken just on the one cluster ROI
                 cv::Mat img_mask = cv::Mat::zeros(images_binary[t].size(), CV_8UC1);
-                cv::drawContours(img_mask, objList.PixelIdxList, c, cv::Scalar(255), cv::FILLED);
+                cv::drawContours(img_mask, objList.PixelIdxList, c, cv::Scalar(255),cv::FILLED);
 
                 cv::Mat img_binary( images_binary[t].size(), CV_8UC1, cv::Scalar(0) );
                 cv::bitwise_and(images_binary[t], img_mask, img_binary);
@@ -1133,7 +1136,7 @@ namespace ibp_cluster_detection
                 int num_distinct_regions;
                 int num_distinct_regions_dT = -1;
 
-                /// (4) Ibp segment inner cell to get number of markers
+                /// (4) Ibp segment inner cell to get number of markers                 
                 num_distinct_regions = ibp_cluster_detection::segment_singleCells(ROI_gray_pad, ROI_binary_pad, ROI_markers, canny_threshold);
 
                 /// CAUTION: exception handling when number of regions inside cluster = 0 => assign number of already detected markers
@@ -1144,7 +1147,7 @@ namespace ibp_cluster_detection
                 int ITERATIONS = 0;
 
                 if (FLAG_DEBUG){
-                    std::cout << "\tINFO: # ROI's - marker [ actual / target ]: [ " << num_distinct_regions << " / " << num_regions[idx] << " ] after segment_singleCells [frame]: " << t << std::endl;
+                    std::cout << "\tINFO: # ROI's - marker\t\t\t[ actual / target ]: [ " << num_distinct_regions << " / " << num_regions[idx] << " ]\t => segment_singleCells\t\t[frame]: " << t << "\t[ID]: " << c << std::endl;
                 }
 
                 /// (5) Extract marker by distance transformation as long as there are so many distinct regions as known for the corresponding cluster
@@ -1153,14 +1156,14 @@ namespace ibp_cluster_detection
                     /// continue with markers from single-cell-segmentation, abort if needed number is reached
                     num_distinct_regions = ibp_cluster_detection::distanceTransformation(ROI_markers, ROI_markers);
                     if (FLAG_DEBUG) {
-                        std::cout << "\tINFO: # ROI's - marker    [ actual / target ]: [ " << num_distinct_regions << " / " << num_regions[idx] << " ]\t => distanceTransformation [frame]: " << t << std::endl;
+                        std::cout << "\tINFO: # ROI's - marker\t\t\t[ actual / target ]: [ " << num_distinct_regions << " / " << num_regions[idx] << " ]\t => distanceTransformation\t[frame]: " << t << "\t[ID]: " << c << std::endl;
                     }
                     if (num_distinct_regions == num_regions[idx]) break;
 
                     /// create markers from original binary cluster ROI, abort if needed number is reached
                     num_distinct_regions_dT = ibp_cluster_detection::distanceTransformation(ROI_markers_dT, ROI_markers_dT);
                     if (FLAG_DEBUG) {
-                        std::cout << "\tINFO: # ROI's - marker_dt [ actual / target ]: [ " << num_distinct_regions_dT << " / " << num_regions[idx] << " ]\t => distanceTransformation [frame]: " << t << std::endl;
+                        std::cout << "\tINFO: # ROI's - marker_dt\t\t[ actual / target ]: [ " << num_distinct_regions_dT << " / " << num_regions[idx] << " ]\t => distanceTransformation\t[frame]: " << t << "\t[ID]: " << c << std::endl;
                     }
                     if (num_distinct_regions_dT == num_regions[idx]) break;
 
@@ -1182,9 +1185,9 @@ namespace ibp_cluster_detection
 
                 /// (6) Check whether there a still not the correct number of marker, if yes select randomly based on cluster size
                 if ( num_distinct_regions != num_regions[idx] and num_distinct_regions_dT != num_regions[idx] ){
-
+                    
                     if (FLAG_DEBUG){
-                        std::cout << "\tINFO: # ROI's - random-marker [ actual / target ]: [ " << num_distinct_regions << " / " << num_regions[idx] << " ]\t => before setRandomMarker [frame]: " << t << std::endl;
+                        std::cout << "\tINFO: # ROI's - random-marker\t[ actual / target ]: [ " << num_distinct_regions << " / " << num_regions[idx] << " ]\t => before setRandomMarker\t[frame]: " << t << "\t[ID]: " << c << std::endl;
                     }
 
                     try {
@@ -1195,9 +1198,9 @@ namespace ibp_cluster_detection
                     }
 
                     if (FLAG_DEBUG){
-                        std::cout << "\tINFO: # ROI's - random-marker [ actual / target ]: [ " << num_distinct_regions << " / " << num_regions[idx] << " ]\t => after setRandomMarker [frame]: " << t << std::endl;
+                        std::cout << "\tINFO: # ROI's - random-marker\t[ actual / target ]: [ " << num_distinct_regions << " / " << num_regions[idx] << " ]\t => after setRandomMarker\t[frame]: " << t << "\t[ID]: " << c << std::endl;
                     }
-
+                    
                 }
 
                 /// perform the watershed segmentation on the final markers
@@ -1260,7 +1263,7 @@ namespace ibp_cluster_detection
 
             /// store images if debug mode is activate
             if(FLAG_DEBUG){
-                io::write_image(path, img_debug, t);
+                io::write_image(path, img_debug, t, false, std::nullopt, "jpg");
             }
 
         }

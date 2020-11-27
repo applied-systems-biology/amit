@@ -12,9 +12,7 @@
 
 #include "state_classification.h"
 #include <iostream>
-#include <sstream>
 #include <fstream>
-#include <opencv2/highgui.hpp>
 #include <opencv2/imgproc.hpp>
 #include "Segmentation.h"
 

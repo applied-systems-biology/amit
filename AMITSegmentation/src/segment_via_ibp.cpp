@@ -12,9 +12,8 @@
 
 
 #include "segment_via_ibp.h"
-#include <stdlib.h>
-#include <assert.h>
-#include <math.h> 
+#include <cstdlib>
+#include <cassert>
 #include <optional>
 #include <algorithm>
 #include <iomanip>
@@ -50,7 +49,7 @@ namespace ibp
      * @param b second point where the line goes through.
      * @param color color of the drawn line.
      */
-    void fullLine(cv::Mat *img, cv::Point a, cv::Point b, cv::Scalar color){
+    void fullLine(cv::Mat *img, const cv::Point& a, const cv::Point& b, const cv::Scalar& color){
         
         double slope = Slope(a.x, a.y, b.x, b.y);
 
@@ -59,7 +58,7 @@ namespace ibp
         p.y = -(a.x - p.x) * slope + a.y;
         q.y = -(b.x - q.x) * slope + b.y;
 
-        line(*img, p, q, color, 5, 8, 0);
+        line(*img, p, q, color, 3, 8, 0);
     }
 
     /**
@@ -98,17 +97,15 @@ namespace ibp
         // Standard Hough Transformation
         // cv::HoughLines(temp, lines, 1, CV_PI/180, minIntersection );
 
-        for( size_t i = 0; i < lines.size(); i++ ) {
+        for(auto l : lines) {
             
-            cv::Vec4i l = lines[i];
-
             // draw the line until it connects with the image boundary
             if(draw_full_line){
                 fullLine( &dst, cv::Point(l[0], l[1]), cv::Point(l[2], l[3]), cv::Scalar(255) ); 
             }
             // draw the exact line contour
             else {
-                cv::line( dst, cv::Point(l[0], l[1]), cv::Point(l[2], l[3]), cv::Scalar(255), 7, cv::LINE_AA); 
+                cv::line( dst, cv::Point(l[0], l[1]), cv::Point(l[2], l[3]), cv::Scalar(255), 3, cv::LINE_AA);
             }
         
         }            
@@ -145,8 +142,8 @@ namespace ibp
      * (1) pre-processing by removoval of artifacts and objects smaller than a specified area size 
      * (2) close the remaining non-zero pixels
      * (3) perform the second hough and draw all detected lines until they connect with the image boundary
-     * (4) closing operation to combine the detected lines and to prevent holes 
-     * 
+     * (4) closing operation to combine the detected lines and to prevent holes
+     *
      * @param src image where the grid lines should be enhanced.
      * @param dst resulting image with a binary image, where the foreground is defined by the detected lines over the whole image.
      * @param min_area_size remove binary objects smaller than this specified area size. 
@@ -156,20 +153,21 @@ namespace ibp
      */
     void enhance_gridlines(const cv::Mat &src, cv::Mat &dst, const int &min_area_size, const int &minIntersection, const int &minLineLength, const int &maxLineGap){
 
-        cv::Mat img_bwareaopen, img_dilate, img_hough;
+        cv::Mat img_bwareaopen, img_closing, img_hough;
+
+        cv::Mat kernel = cv::getStructuringElement( cv::MORPH_CROSS, cv::Size(5,5) );
 
         // (1) pre-processing by removal of artifacts and objects smaller than a specified area size 
         IPT::bwareaopen(src, img_bwareaopen, min_area_size);
         
-        // (2) close the remaining non-zero pixels
-        cv::Mat dkernel = cv::getStructuringElement( cv::MORPH_CROSS, cv::Size(11,11) ); 
-        cv::morphologyEx(img_bwareaopen, img_dilate, cv::MORPH_CLOSE, dkernel);
+        // (2) remove the remaining non-zero pixels by morphological closing
+        cv::morphologyEx(img_bwareaopen, img_closing, cv::MORPH_CLOSE, kernel);
 
-        // (3) perform the second hough and draw all detected lines until they connect with the image boundary
-        ibp::houghTransformation(img_dilate, img_hough, minIntersection, minLineLength, maxLineGap, false, true);
+        // (3) perform the second hough and draw all detected lines until they connect with the image boundary (CAUTION: NOT fully drawn line)
+        ibp::houghTransformation(img_closing, img_hough, minIntersection, minLineLength, maxLineGap, false, false);
 
         // (4) closing operation to combine the detected lines and to prevent holes
-        cv::morphologyEx(img_hough, dst, cv::MORPH_CLOSE, dkernel, cv::Point(-1,-1), 2); 
+        cv::morphologyEx(img_hough, dst, cv::MORPH_CLOSE, kernel, cv::Point(-1,-1), 2);
 
     }
 
@@ -192,28 +190,29 @@ namespace ibp
     void approx_houghLines(const cv::Mat &src, cv::Mat &dst, const bool &FLAG_DEBUG) {
 
         // (1) specify the parameter dependent on the image size
-        std::vector<int> minIntersections( 1 );     
-        std::vector<int> maxLineGap( 4 );   
+        std::vector<int> minIntersections( 3 );
+        std::vector<int> maxLineGap( 3 );
+
         int minLineLength;
-        int min_area_size = 1;    
+        int min_area_size = 1;
 
         // minLineLength is fixed for the size
-        if (src.cols < 1700){
+        if (src.cols < 1500){
             // image size ~ 1024x1024
-            minLineLength = 50;   
-            
+            minLineLength = 50;
+
             // step-parameter
-            minIntersections = { 60 };
-            maxLineGap = { 5, 10, 35, 60 };
+            minIntersections = { 50 , 60 , 70 };
+            maxLineGap = { 5, 10, 15 };
 
             min_area_size = 1250;
         } else {
             // image size ~ 2048x2048
-            minLineLength = 100;   
+            minLineLength = 100;
             
             // step-parameter
-            minIntersections = { 120 };
-            maxLineGap = { 10, 20, 70, 120 };
+            minIntersections = { 100, 120, 140 };
+            maxLineGap = { 10, 20, 30 };
 
             min_area_size = 2500;
         }
@@ -222,25 +221,24 @@ namespace ibp
         int predecessor_cnt = 0;
         int min_change = std::numeric_limits<int>::max();
 
-
         // (2) iterate over all parameter permutations
         for (int minInt : minIntersections) {
 
             for (int minLGap : maxLineGap) {
 
-                // (3) calculate the hough transformation for the current parameter setting
+                // (3) calculate the hough transformation for the current parameter setting (no canny because input is already a binary image)
                 cv::Mat img_hough;
-                ibp::houghTransformation(src, img_hough, minInt, minLineLength, minLGap, true, false);
+                ibp::houghTransformation(src, img_hough, minInt, minLineLength, minLGap, false, false);
 
                 // (4) perform a second hough transformation on the already detected lines
                 cv::Mat img_hough_2nd;
-                ibp::enhance_gridlines(img_hough, img_hough_2nd, min_area_size, minInt*2, minLineLength, minLGap*2);
+                ibp::enhance_gridlines(img_hough, img_hough_2nd, min_area_size, minInt*3, minLineLength, minLGap*3);
 
                 // (5)  calculate the number of non-zero pixels as a metric for the approximation and compare it with the previous iteration
                 int current_cnt = cv::countNonZero(img_hough_2nd);
-  
+
                 // calculate the difference of non-zero pixels of the two images
-                int absolute_diff = abs( predecessor_cnt - current_cnt ); 
+                int absolute_diff = abs( predecessor_cnt - current_cnt );
                 double relat_diff = abs( 1. - (double) current_cnt / predecessor_cnt ) * 100;
 
                 // (6) chose the setting with the minimum change dependent on the sensitive hough detection
@@ -248,7 +246,7 @@ namespace ibp
                     min_change = absolute_diff;
                     img_hough_2nd.copyTo( dst );
                 }
-                
+
                 if (FLAG_DEBUG) {
                     std::cout << "minIntersections: " << minInt << " , maxLineGap_steps: " << minLGap  << "\tabsolute_diff:\t" << absolute_diff << "\trelative_diff:\t" << relat_diff << "\tmin_change:\t" << min_change << std::endl;
                 }
@@ -257,9 +255,8 @@ namespace ibp
                 predecessor_cnt = current_cnt;
 
             }
-
         }
-        
+
     }
 
     /**
@@ -277,10 +274,11 @@ namespace ibp
      * @param FLAG_DEBUG verbose parameter. 
      * @return resulting binary image.
      */
-    cv::Mat segSplitFull(const cv::Mat &src_tmp, const cv::Mat &sd1, const cv::Mat &sd2, const std::string &rmg, const std::string &FFT_MASK_PATH, const bool &clear_border, const int &min_region_size, const std::string &OUTPUTDIR_CNT, const int &i, const bool &FLAG_DEBUG){
+    cv::Mat segSplitFull(const cv::Mat &src_tmp, const cv::Mat &sd1, const cv::Mat &sd2, const std::string &rmg, const std::string &FFT_MASK_PATH, const bool &clear_border, const int &min_region_size, double &mythresh, const int&erode_kernelSize, const std::string &OUTPUTDIR_CNT, const int &i, const bool &FLAG_DEBUG){
 
         cv::Mat src;
 
+        ///// remove artifacts by FFT-mask
         if (rmg == "fft_mask"){
 
             /// read fft-mask
@@ -331,119 +329,119 @@ namespace ibp
             src = src_tmp;
         }
 
-        ///// image preprocessing
-        cv::Mat Io, Jt, J1, Ic, Jb, J;
-        // sharpen and background correction step 1 (opening,subtract,add)
-        IPT::imopen(src, Io, sd2);
-        IPT::imsubtract(src, Io, Jt);
-        IPT::imadd(src, Jt, J1);
+        ///// (1) image preprocessing - contrast enhancement /////
+        cv::Mat Jt, J1, Jb, J;
 
-        // sharpening and background correction step 2 (close, 2xsubtract)
-        IPT::imclose(src, Ic, sd1);
-        IPT::imsubtract(Ic, src, Jb);
-        IPT::imsubtract(J1, Jb, J);
+        cv::morphologyEx(src, Jt, cv::MORPH_TOPHAT, sd2);
+        cv::add(src,Jt,J1);
 
-        ///// noise filtration
-        cv::Mat Id, Ids;
-        // histogram shift to middle of uint8 range
-        int8_t subvalue = std::round(cv::mean(src)[0] - 128);
-        J = J - subvalue;
-               
-        // noise supression by Wiener filter 
+        cv::morphologyEx(src, Jb, cv::MORPH_BLACKHAT, sd1);
+        cv::subtract(J1,Jb,J); /// CAUTION: values can be < 0
+
+        ///// (2) noise filtration by Wiener filter /////
+        cv::Mat Id;
+
         double noiseVariance;
         IPT::wiener2(J, Id, cv::Size(5,5), noiseVariance);
 
-        // standard deviation filter allow to detect inhomog. regions        
-        IPT::stdfilt(Id, Ids);        
+        ///// (3) standard deviation map /////
+        cv::Mat Ids;
 
-        
-        cv::Mat img_raw_segmentation, img_close, img_open;
+        IPT::stdfilt(Id, Ids);
+
+        ///// (4) perform raw segmentation with optional hough transformation /////
+        cv::Mat1b img_segmented;
+
+        IPT::imbinarize(Ids, img_segmented, mythresh);
+
+        if (FLAG_DEBUG) visual::createGUI(Ids, visual::globThreshold);
+
+        ///// (4.1) run hough-transformation on resulting standard-deviation map /////
+        cv::Mat img_raw_segmentation;
 
         if (rmg == "hough"){
 
-            cv::Mat gridMask1, gridMask2, gridArea, gridOverlay, gridClosing, gridMedian, gridOpen;
-            cv::Mat1b gridAreaThresh;                        
-            
-            try {  
+            cv::Mat gridMask1, gridMask2, img_stdfiltering, gridArea, gridOverlay, gridMax, gridClosing, gridMedian, gridClosing2;
+            cv::Mat1b gridAreaThresh;
 
-                // perform an approximation to detect the grid as precise as possible
+            try {
+
+                /// perform an approximation to detect the grid as precise as possible
                 cv::Mat img_hough_approx;
-                ibp::approx_houghLines(Ids, gridMask1, FLAG_DEBUG);
+                ibp::approx_houghLines(img_segmented, gridMask1, FLAG_DEBUG);
 
-                // invert intensities to build mask for grid area
+                /// invert intensities to build mask for grid area
                 cv::bitwise_not(gridMask1, gridMask2);
 
             }
-            catch(const std::exception& e) {				
-                std::cerr << "segSplitFull::performSecondHoughTransformation failed\n" << std::endl;	
-                std::cerr << e.what() << std::endl;													
+            catch(const std::exception& e) {
+                std::cerr << "segSplitFull::performSecondHoughTransformation failed\n" << std::endl;
+                std::cerr << e.what() << std::endl;
             }
 
-            // perform overlay, caution: only info about cells, which are located over a grid line will be preserved          
-            cv::bitwise_and(Ids, gridMask1, gridArea);
+            /// perform a filtering with a standard-deviation kernel
+            IPT::stdfilter(Id, img_stdfiltering),
 
-            // perform overlay, caution: all info about cell, which are located over a grid line will be removed          
-            cv::bitwise_and(Ids, gridMask2, gridOverlay);
+            /// perform overlay, caution: only info about cells, which are located over a grid line will be preserved
+            cv::bitwise_and(img_stdfiltering, gridMask1, gridArea);
 
-            /// perform several operation to keep the cell-information and get rid of the noise (rest of the line)             
-                       
-            // perform morphology - closing - median - thresholding  
-            cv::Mat skernel = cv::getStructuringElement( cv::MORPH_CROSS, cv::Size(5,5) ); 
-            
-            IPT::imclose(gridArea, gridClosing, skernel, 2);
-            
+            /// perform overlay, caution: all info about cell, which are located over a grid line will be removed
+            cv::bitwise_and(J, gridMask2, gridOverlay);
+
+            ///// perform several operation to keep the cell-information and get rid of the noise (rest of the line)
+
+            /// perform morphology-closing - median filtering - thresholding - morphology-closing
+            cv::Mat kernel = cv::getStructuringElement( cv::MORPH_ELLIPSE, cv::Size(3,3) );
+            IPT::imclose(gridArea, gridClosing, kernel, 1);
+
             cv::medianBlur(gridClosing, gridMedian, 3);
 
-            double rmG_threshold = 254. / 255.; 
-            IPT::imbinarize(gridMedian, gridAreaThresh, rmG_threshold);            
-                        
-            // merge images with parts with and without grid area
-            cv::bitwise_or(gridAreaThresh, gridOverlay, img_raw_segmentation); 
-                
+            double rmG_threshold = 254.;
+            IPT::imbinarize(gridMedian, gridAreaThresh, rmG_threshold);
+
+            IPT::imclose(gridAreaThresh, gridClosing2, kernel, 2);
+
+            /// merge images with parts with and without grid area
+            cv::bitwise_and(img_segmented, gridMask2, img_raw_segmentation);
+            cv::bitwise_or(img_raw_segmentation, gridAreaThresh, img_raw_segmentation);
+
         }
         else {
-            img_raw_segmentation = Ids;
+            img_segmented.copyTo(img_raw_segmentation);
         }
 
-        cv::Mat1b img_segmented, img_majority;
+        ///// (5) morphology erosion , remove-small-objects , clear-border , majority , image-fill , erosion /////
+        cv::Mat img_erode, img_bwareopen, img_clearborder, img_binary, img_majority, img_fill, dst;
 
-        // combine cells and fill holes by morphology - closing
-        cv::Mat kernelClose = cv::getStructuringElement( cv::MORPH_CROSS, cv::Size(3,3) ); 
-        IPT::imclose(img_raw_segmentation, img_close, kernelClose, 3);
+        cv::Mat kernelErode = cv::getStructuringElement( cv::MORPH_RECT, cv::Size(1,1) );
+        cv::erode(img_raw_segmentation, img_erode, kernelErode);
 
-        // remove static and small objects by morphology - opening
-        cv::Mat kernelOpen = cv::getStructuringElement( cv::MORPH_CROSS, cv::Size(3,3) ); 
-        IPT::imopen(img_close, img_open, kernelOpen, 2);        
-
-        // segment the image by apply global thresholding, at this point the threshold is just the mean ( ~ 5/255 ) 
-        cv::Mat mean, stdDev, variance;
-        cv::meanStdDev(img_open, mean, stdDev);
-        
-        double meanRatio = mean.at<double>(cv::Point(0,0));
-        double thresh = meanRatio / 255.0;        
-        IPT::imbinarize(img_open, img_segmented, thresh);
-        
-        // perform bwmorph - majority operation to set pixel to 1 if five or more pixels in its 3-by-3 neighborhood are 1s
-        IPT::bwmorph(img_segmented, img_majority, "majority");
-                
-        // fill all holes in (low-contrast) cells
-        IPT::imfill(img_majority, img_majority);
-
-        // remove objects at the borders of the image if activated
-        cv::Mat img_clearborder, img_bwareopen, img_binary;
-
-        // remove small objects, specified by the max. number of pixels in an object
-        IPT::bwareaopen(img_majority, img_bwareopen, min_region_size);
+        /// remove small objects, specified by the min. number of pixels in an object
+        IPT::bwareaopen(img_erode, img_bwareopen, min_region_size);
 
         if (clear_border) {
-            IPT::imclearborder(img_bwareopen, img_clearborder);   
-            img_clearborder.copyTo(img_binary);         
+            IPT::imclearborder(img_bwareopen, img_clearborder);
+            img_clearborder.copyTo(img_binary);
         }
         else {
             img_bwareopen.copyTo(img_binary);
-        }        
+        }
 
-        return img_binary;
+        /// perform bwmorph - majority operation to set pixel to 1 if five or more pixels in its 3-by-3 neighborhood are 1s
+        IPT::bwmorph(img_binary, img_majority, "majority");
+
+        /// fill all holes in (low-contrast) cells
+        IPT::imfill(img_majority, img_fill);
+
+        if (erode_kernelSize > 0) {
+            cv::Mat kernelErode = cv::getStructuringElement( cv::MORPH_CROSS, cv::Size(erode_kernelSize,erode_kernelSize) );
+            cv::erode(img_fill, dst, kernelErode);
+        }
+        else {
+            img_fill.copyTo(dst);
+        }
+
+        return dst;
 
     }
 
@@ -459,10 +457,13 @@ namespace ibp
      * @param min_region_size remove binary objects smaller than this specified area size.
      * @param FLAG_DEBUG verbose parameter. 
      */
-    void ibp_segmentation(const std::vector<cv::Mat> &images, const int &N_THREADS, const std::string &rmg, const std::string &FFT_MASK_PATH, const bool &clear_border, const std::string &OUT_BINARY, const int &min_region_size, const bool &FLAG_DEBUG){
-        
-        cv::Mat sd1 = IPT::createKernel("disk3");
-        cv::Mat sd2 = IPT::createKernel("disk5");
+    void ibp_segmentation(const std::vector<cv::Mat> &images, const int &N_THREADS, const std::string &rmg, const std::string &FFT_MASK_PATH, const bool &clear_border, const std::string &OUT_BINARY, const int &min_region_size, const int&sd1_kernelSize, const int&sd2_kernelSize, double &mythresh, const int&erode_kernelSize, const bool &FLAG_DEBUG){
+
+        cv::Mat sd1 = IPT::create_disk(sd1_kernelSize);
+        cv::Mat sd2 = IPT::create_disk(sd2_kernelSize);
+
+        std::cout << " [0.4.0] sd1-size: " << sd1.size() << std::endl;
+        std::cout << " [0.4.1] sd2-size: " << sd2.size() << std::endl;
 
         // create directory to save control images for FLAG_DEBUG mode
         std::string OUTPUTDIR_CNT = OUT_BINARY + "/../binary_control/";
@@ -473,14 +474,14 @@ namespace ibp
         #pragma omp parallel for firstprivate(images) num_threads(N_THREADS)
         for(size_t i = 0; i < images.size(); ++i) {
 
-            cv::Mat binary = ibp::segSplitFull(images[i], sd1, sd2, rmg, FFT_MASK_PATH, clear_border, min_region_size, OUTPUTDIR_CNT, i, FLAG_DEBUG);
+            cv::Mat binary = ibp::segSplitFull(images[i], sd1, sd2, rmg, FFT_MASK_PATH, clear_border, min_region_size, mythresh, erode_kernelSize, OUTPUTDIR_CNT, i, FLAG_DEBUG);
 
             if (FLAG_DEBUG) {
                 cv::Mat img_cnt;
                 // for debugging purpose: draw contours in source-image 
                 ibp::myfindContours(binary, images[i], img_cnt);        
                 // save control image
-                io::write_image(OUTPUTDIR_CNT, img_cnt, i, true);
+                io::write_image(OUTPUTDIR_CNT, img_cnt, i, true, std::nullopt, "jpg");
             }   
 
             // save binary image including PMNs

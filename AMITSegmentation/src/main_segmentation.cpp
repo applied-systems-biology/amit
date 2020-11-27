@@ -59,14 +59,14 @@ int main(int argc, char* argv[]) {
     /******************************************************************************/
     std::string selected_method;
     
-    const char *minit[] = { "gmm", "ibp", "gmmFCs", "canny", "singlecells", "otsu" };
+    const char *minit[] = { "gmm", "faf", "gmmFCs", "canny", "singlecells", "otsu" };
     std::vector<std::string> methods(minit, minit+6);
     
     // check for a valid method 
     if(std::find(methods.begin(), methods.end(), J["method"].get<std::string>()) != methods.end()){
         selected_method = J["method"].get<std::string>();
     } else {
-        std::cout << " [ERROR] Please specify valid method: {gmm, ibp, gmmFCs, canny, singlecells, otsu}" << std::endl;
+        std::cout << " [ERROR] Please specify valid method: {gmm, faf, gmmFCs, canny, singlecells, otsu}" << std::endl;
         return -1;
     }
 
@@ -96,7 +96,7 @@ int main(int argc, char* argv[]) {
 
     std::vector<cv::Mat> images, images_fungi;
 
-    if( selected_method == "gmm" || selected_method == "ibp" || selected_method == "otsu" ){
+    if( selected_method == "gmm" || selected_method == "faf" || selected_method == "otsu" ){
 
 		io::read_images(INPUTDIR, images, cv::IMREAD_GRAYSCALE);
         
@@ -152,17 +152,24 @@ int main(int argc, char* argv[]) {
 
     /************************************************************************************************************/
 
-    else if(selected_method == "ibp") {
+    else if(selected_method == "faf") {
         
         std::string REMOVE_GRID = J["remove_grid"].get<std::string>();
         std::string FFT_MASK_PATH = J["fft_mask_path"].get<std::string>();
         std::cout << " [0.3.1] selected method to remove the grid: <" << REMOVE_GRID << ">" << std::endl;
 
         int MIN_REGION_SIZE = J["min_region_size"].get<int>();
-       
+        int SD1_KERNEL_SIZE = J["sd1_kernelSize"].get<int>();
+        int SD2_KERNEL_SIZE = J["sd2_kernelSize"].get<int>();
+        /// threshold should be in range of 0-255 for specified value, or <= 0 to use the mean of the corner pixel intensity
+        double THRESHOLD = J["threshold_binary"].get<double>();
+        std::cout << " [0.3.2] threshold for binarization:\t" << THRESHOLD << std::endl;
+
+        int ERODE_KERNEL_SIZE = J["erode_kernelSize"].get<int>();
+
         /// parameter to clear all segments which are connected to the border
         bool CLEAR_BORDER = J["clear_border"].get<bool>();
-        ibp::ibp_segmentation(images, N_THREADS, REMOVE_GRID, FFT_MASK_PATH, CLEAR_BORDER, OUTPUTDIR, MIN_REGION_SIZE, FLAG_DEBUG);
+        ibp::ibp_segmentation(images, N_THREADS, REMOVE_GRID, FFT_MASK_PATH, CLEAR_BORDER, OUTPUTDIR, MIN_REGION_SIZE, SD1_KERNEL_SIZE, SD2_KERNEL_SIZE,THRESHOLD, ERODE_KERNEL_SIZE, FLAG_DEBUG);
     }
 
     /************************************************************************************************************/

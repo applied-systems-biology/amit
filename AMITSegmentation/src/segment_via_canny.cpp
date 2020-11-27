@@ -16,6 +16,7 @@
 #include "IOputs.h"
 #include "ImageProcessingToolbox.h"
 #include "segment_via_ibp.h"
+#include "visualize.h"
 
 namespace IPT = ImageProcessingToolbox;
 
@@ -98,24 +99,14 @@ namespace canny
 
         // perform Canny - edge detector
         cv::Canny(img_open, img_canny, 0, 100, 3);
+
         img_canny.convertTo(img_canny2, CV_8U);
 
         kernel = cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(MORPH_CLOSE_CANNY, MORPH_CLOSE_CANNY));
         cv::morphologyEx(img_canny2, img_canny_close, cv::MORPH_CLOSE, kernel);
-    
-        // fill holes
-        cv::Rect rect;
-        int x = 0;
-        int y = 0;
 
-        while (rect.area() != src.rows*src.cols and (x < src.rows and y < src.cols)){
-            img_canny_close.copyTo(img_canny_fill);
-            cv::floodFill(img_canny_fill, cv::Point(x,y), 255, &rect, 0,0,4);
-            x += 10;
-        }
-
-        cv::bitwise_not(img_canny_fill, img_canny_fill);
-        cv::add(img_canny_close, img_canny_fill, img_canny_fill);
+        /// fill holes
+        IPT::imfill(img_canny_close, img_canny_fill);
 
         // remove small objects, specified by the min number of pixels in an object
         cv::Mat img_rm_small_objects;
@@ -164,7 +155,7 @@ namespace canny
                 // for debugging purpose: draw contours in source-image 
                 ibp::myfindContours(binary, images[i], img_cnt);        
                 // save control image
-                io::write_image(OUTPUTDIR_CNT, img_cnt, i, true);
+                io::write_image(OUTPUTDIR_CNT, img_cnt, i, true, std::nullopt, "jpg");
             }
             
             // save binary image 

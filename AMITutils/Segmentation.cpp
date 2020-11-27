@@ -254,7 +254,7 @@ namespace Segmentation
                     Segmentation::getRegion2DIterative(im, i, j, pixels_r);
                     Segmentation::getContour2D(im2, pixels_r, pixels_c);
 
-                    /// discard objects at the image border if choosen
+                    /// discard objects at the image border if chosen
                     if (clear_border) {
                         if (Segmentation::touchesBorder(pixels_c, im2)) {
                             continue;
@@ -322,25 +322,14 @@ namespace Segmentation
 
                     reg.addRegionPixels(pixels_r);
                     reg.addContourPixels(pixels_c);
-    //				reg.computeContour(); 
-                    // TODO: Philipp: alles was hier aussortiert ist auf 
-                    // Notwendigkeit prüfen und ggf. löschen
+    //				reg.computeContour();
 
                     pixels_r.resize(0);
                     pixels_c.resize(0);
 
                     reg.computeCentroid();
                     reg.createImage();
-    //				reg.showImage();
 
-    //				for(unsigned int i = 0; i < reg.region_pixels.size(); i++){
-    //					cout << reg.region_pixels.at(i)[0] << " " << reg.region_pixels.at(i)[1] << endl;
-    //				}
-                    //sort pixels (erst nach x und dann nach y)
-    //				sort(reg.region_pixels.begin(), reg.region_pixels.end(), Segmentation::sortVec2i);
-    //				for(unsigned int i = 0; i < reg.region_pixels.size(); i++){
-    //					cout << reg.region_pixels.at(i)[0] << " " << reg.region_pixels.at(i)[1] << endl;
-    //				}
 
     //				if(!Segmentation::touchesBorder(reg.contour_pixels, im)){
                     regions.push_back(reg);

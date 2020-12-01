@@ -19,7 +19,7 @@ add_subdirectory(AMITTracking)
 add_subdirectory(AMITStateClassification)
 
 
-set(CPACK_GENERATOR "DEB;TGZ")
+set(CPACK_GENERATOR "DEB;TGZ;NSIS")
 set(CPACK_DEBIAN_PACKAGE_MAINTAINER "ASB")
 
 set(CPACK_DEBIAN_PACKAGE_DEPENDS "libopencv-core (>=3.2)")

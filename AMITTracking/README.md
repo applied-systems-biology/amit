@@ -19,11 +19,11 @@ In the following table you can the see the hyper parameters for the algorithm wi
 |       `input_binary`       |  Directory path   | /AMITSegmentation/binary/ | Input directory with segmented binary images                 |
 |          `output`          |  Directory path   |  /AMITTracking/  | Output path where all results will be stored                 |
 |       `clear_border`       |       Flag        |           false           | Remove objects that are connected to the edge of the image   |
-| `cluster_detection_method` |       Flag        |            ibp            | Possible methods to detect/discard clusters are: *gmm*, *ibp* or *none* . Select *none* if all clusters within the segmentation have been split or if there are certainly none. |
+| `cluster_detection_method` |       Flag        |            faf            | Possible methods to detect/discard clusters are: *gmm*, *faf* or *none* . Select *none* if all clusters within the segmentation have been split or if there are certainly none. |
 |      `number_classes`      |  Integer = {2,3}  |             2             | Number of estimate the Gaussian Mixture distributions of cell areas with 2 or 3 classes (only for `method` *gmm*) |
-|    `overlap_threshold`     |   Float = [0,1]   |            0.1            | Threshold in percent for overlapping objects between 2 frames (only for `method` *ibp*) |
-|     `canny_threshold`      | Integer = [0,255] |            100            | Canny threshold for single cell segmentation within a cluster (only for `method` *ibp*) |
-|           `gap`            |   Integer >= 0    |             2             | Defines the number of missing cell positions between track fragments that is accepted for still connecting them into on track |
+|    `overlap_threshold`     |   Float = [0,1]   |            0.1            | Threshold in percent for overlapping objects between 2 frames (only for `method` *faf*) |
+|     `canny_threshold`      | Integer = [0,255] |            100            | Canny threshold for single cell segmentation within a cluster (only for `method` *faf*) |
+|           `gap`            |   Integer >= 0   |             2             | Defines the number of missing cell positions between track fragments that is accepted for still connecting them into on track |
 |          `delay`           |   Integer >= 0    |             0             | Difference between indizes of binary and original images     |
 |         `fontsize`         |   Integer >= 1    |             1             | Outline font size in images                                  |
 |          `debug`           |       Flag        |           false           | Produces an additional output                                |

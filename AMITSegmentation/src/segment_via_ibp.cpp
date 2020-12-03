@@ -257,6 +257,15 @@ namespace ibp
             }
         }
 
+        // post-processing by remove of artifacts and objects smaller than a specified area size
+        cv::Mat img_bwareaopen;
+        IPT::bwareaopen(dst, img_bwareaopen, min_area_size);
+
+        // post-processing by remove objects which are not connected to the image border
+        cv::Mat img_clearBorder;
+        IPT::imclearborder(img_bwareaopen, img_clearBorder);
+        cv::subtract(img_bwareaopen, img_clearBorder, dst);
+
     }
 
     /**
@@ -296,7 +305,11 @@ namespace ibp
             }
             tmp_src.convertTo(tmp_src, CV_32F, 1.0 / 255, 0);
 
-            assert(("segSplitFull-fft_mask: mask is empty", !mask.empty() ) );
+            if (mask.empty()) {
+                std::cout << " [ERROR] segSplitFull-fft_mask: mask is empty" << std::endl;
+                return cv::Mat();
+            }
+            
             if (FLAG_DEBUG)
                 std::cout << " [INFO] fft_mask.size:\t" << mask.size() << " , path: " << FFT_MASK_PATH << std::endl;
 

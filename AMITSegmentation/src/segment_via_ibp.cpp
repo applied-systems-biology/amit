@@ -58,7 +58,7 @@ namespace ibp
         p.y = -(a.x - p.x) * slope + a.y;
         q.y = -(b.x - q.x) * slope + b.y;
 
-        line(*img, p, q, color, 3, 8, 0);
+        line(*img, p, q, color, 5, 8, 0);
     }
 
     /**
@@ -105,7 +105,7 @@ namespace ibp
             }
             // draw the exact line contour
             else {
-                cv::line( dst, cv::Point(l[0], l[1]), cv::Point(l[2], l[3]), cv::Scalar(255), 3, cv::LINE_AA);
+                cv::line( dst, cv::Point(l[0], l[1]), cv::Point(l[2], l[3]), cv::Scalar(255), 7, cv::LINE_AA);
             }
         
         }            
@@ -190,8 +190,8 @@ namespace ibp
     void approx_houghLines(const cv::Mat &src, cv::Mat &dst, const bool &FLAG_DEBUG) {
 
         // (1) specify the parameter dependent on the image size
-        std::vector<int> minIntersections( 3 );
-        std::vector<int> maxLineGap( 3 );
+        std::vector<int> minIntersections( 1 );
+        std::vector<int> maxLineGap( 4 );
 
         int minLineLength;
         int min_area_size = 1;
@@ -199,20 +199,20 @@ namespace ibp
         // minLineLength is fixed for the size
         if (src.cols < 1500){
             // image size ~ 1024x1024
-            minLineLength = 50;
+            minLineLength = 200;
 
             // step-parameter
-            minIntersections = { 50 , 60 , 70 };
-            maxLineGap = { 5, 10, 15 };
+            minIntersections = { 60 };
+            maxLineGap = { 5, 10, 15, 20 };
 
             min_area_size = 1250;
         } else {
             // image size ~ 2048x2048
-            minLineLength = 100;
+            minLineLength = 300;
             
             // step-parameter
-            minIntersections = { 100, 120, 140 };
-            maxLineGap = { 10, 20, 30 };
+            minIntersections = { 120 };
+            maxLineGap = { 5, 10, 15, 20 };
 
             min_area_size = 2500;
         }
@@ -422,38 +422,41 @@ namespace ibp
         else {
             img_segmented.copyTo(img_raw_segmentation);
         }
+        
+        ///// (5) image-fill, morphology erosion, remove-small-objects, clear-border, majority, erosion, majority /////
+        cv::Mat img_fill, img_erode, img_bwareopen, img_clearborder, img_majority, img_erode_2, dst;
 
-        ///// (5) morphology erosion , remove-small-objects , clear-border , majority , image-fill , erosion /////
-        cv::Mat img_erode, img_bwareopen, img_clearborder, img_binary, img_majority, img_fill, dst;
+        /// (5.1) fill all holes in (low-contrast) cells
+        IPT::imfill(img_raw_segmentation, img_fill);
 
-        cv::Mat kernelErode = cv::getStructuringElement( cv::MORPH_RECT, cv::Size(1,1) );
-        cv::erode(img_raw_segmentation, img_erode, kernelErode);
+        /// (5.2) morphology erosion with small rectangular shaped kernel
+        cv::Mat kernelErode = cv::getStructuringElement( cv::MORPH_CROSS, cv::Size(1,1) );
+        cv::erode(img_fill, img_erode, kernelErode);
 
-        /// remove small objects, specified by the min. number of pixels in an object
+        /// (5.3) remove small objects, specified by the min. number of pixels in an object
         IPT::bwareaopen(img_erode, img_bwareopen, min_region_size);
 
+        /// (5.4) clear the objects connected to the image border if specified
         if (clear_border) {
-            IPT::imclearborder(img_bwareopen, img_clearborder);
-            img_clearborder.copyTo(img_binary);
+            IPT::imclearborder(img_bwareopen, img_clearborder);    
         }
-        else {
-            img_bwareopen.copyTo(img_binary);
-        }
+        img_bwareopen.copyTo(img_clearborder);
 
-        /// perform bwmorph - majority operation to set pixel to 1 if five or more pixels in its 3-by-3 neighborhood are 1s
-        IPT::bwmorph(img_binary, img_majority, "majority");
+        /// (5.5) perform bwmorph - majority operation to set pixel to 1 if five or more pixels in its 3-by-3 neighborhood are 1s
+        IPT::bwmorph(img_clearborder, img_majority, "majority");
 
-        /// fill all holes in (low-contrast) cells
-        IPT::imfill(img_majority, img_fill);
-
+        /// (5.6) perform a final morphology erosion with a ellipsoid-shaped kernel with specifeid kernel-size
         if (erode_kernelSize > 0) {
-            cv::Mat kernelErode = cv::getStructuringElement( cv::MORPH_CROSS, cv::Size(erode_kernelSize,erode_kernelSize) );
-            cv::erode(img_fill, dst, kernelErode);
+            cv::Mat kernelErode = cv::getStructuringElement( cv::MORPH_ELLIPSE, cv::Size(erode_kernelSize,erode_kernelSize) );
+            cv::erode(img_majority, img_erode_2, kernelErode);
+        
+            /// (5.7) perform again majority operation to remove generated artifacts
+            IPT::bwmorph(img_erode_2, dst, "majority");    
         }
         else {
-            img_fill.copyTo(dst);
+            img_majority.copyTo(dst);
         }
-
+        
         return dst;
 
     }

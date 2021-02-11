@@ -424,7 +424,7 @@ namespace ibp
         }
         
         ///// (5) image-fill, morphology erosion, remove-small-objects, clear-border, majority, erosion, majority /////
-        cv::Mat img_fill, img_erode, img_bwareopen, img_clearborder, img_majority, img_erode_2, dst;
+        cv::Mat img_fill, img_erode, img_bwareopen, img_clearborder, img_majority, img_erode_2, img_erode_b, dst;
 
         /// (5.1) fill all holes in (low-contrast) cells
         IPT::imfill(img_raw_segmentation, img_fill);
@@ -445,13 +445,15 @@ namespace ibp
         /// (5.5) perform bwmorph - majority operation to set pixel to 1 if five or more pixels in its 3-by-3 neighborhood are 1s
         IPT::bwmorph(img_clearborder, img_majority, "majority");
 
-        /// (5.6) perform a final morphology erosion with a ellipsoid-shaped kernel with specifeid kernel-size
+        /// (5.6) perform a final morphology erosion with a ellipsoid-shaped kernel with specified kernel-size and subsequently area opening
         if (erode_kernelSize > 0) {
             cv::Mat kernelErode = cv::getStructuringElement( cv::MORPH_ELLIPSE, cv::Size(erode_kernelSize,erode_kernelSize) );
             cv::erode(img_majority, img_erode_2, kernelErode);
+            
+            IPT::bwareaopen(img_erode_2, img_erode_b, min_region_size);
         
             /// (5.7) perform again majority operation to remove generated artifacts
-            IPT::bwmorph(img_erode_2, dst, "majority");    
+            IPT::bwmorph(img_erode_b, dst, "majority");    
         }
         else {
             img_majority.copyTo(dst);

@@ -164,7 +164,7 @@ namespace ibp
         cv::morphologyEx(img_bwareaopen, img_closing, cv::MORPH_CLOSE, kernel);
 
         // (3) perform the second hough and draw all detected lines until they connect with the image boundary (CAUTION: NOT fully drawn line)
-        ibp::houghTransformation(img_closing, img_hough, minIntersection, minLineLength, maxLineGap, false, false);
+        ibp::houghTransformation(img_closing, img_hough, minIntersection, minLineLength, maxLineGap, false, true);
 
         // (4) closing operation to combine the detected lines and to prevent holes
         cv::morphologyEx(img_hough, dst, cv::MORPH_CLOSE, kernel, cv::Point(-1,-1), 2);
@@ -212,7 +212,7 @@ namespace ibp
             
             // step-parameter
             minIntersections = { 120 };
-            maxLineGap = { 5, 10, 15, 20 };
+            maxLineGap = { 5, 10, 15, 20 }; 
 
             min_area_size = 2500;
         }
@@ -232,7 +232,7 @@ namespace ibp
 
                 // (4) perform a second hough transformation on the already detected lines
                 cv::Mat img_hough_2nd;
-                ibp::enhance_gridlines(img_hough, img_hough_2nd, min_area_size, minInt*3, minLineLength, minLGap*3);
+                ibp::enhance_gridlines(img_hough, img_hough_2nd, min_area_size, minInt*2, minLineLength, minLGap*2);
 
                 // (5)  calculate the number of non-zero pixels as a metric for the approximation and compare it with the previous iteration
                 int current_cnt = cv::countNonZero(img_hough_2nd);
@@ -309,7 +309,7 @@ namespace ibp
                 std::cout << " [ERROR] segSplitFull-fft_mask: mask is empty" << std::endl;
                 return cv::Mat();
             }
-            
+
             if (FLAG_DEBUG)
                 std::cout << " [INFO] fft_mask.size:\t" << mask.size() << " , path: " << FFT_MASK_PATH << std::endl;
 
@@ -422,7 +422,7 @@ namespace ibp
         else {
             img_segmented.copyTo(img_raw_segmentation);
         }
-        
+
         ///// (5) image-fill, morphology erosion, remove-small-objects, clear-border, majority, erosion, majority /////
         cv::Mat img_fill, img_erode, img_bwareopen, img_clearborder, img_majority, img_erode_2, img_erode_b, dst;
 
@@ -440,16 +440,18 @@ namespace ibp
         if (clear_border) {
             IPT::imclearborder(img_bwareopen, img_clearborder);    
         }
-        img_bwareopen.copyTo(img_clearborder);
+        else {
+            img_bwareopen.copyTo(img_clearborder);
+        }        
 
         /// (5.5) perform bwmorph - majority operation to set pixel to 1 if five or more pixels in its 3-by-3 neighborhood are 1s
         IPT::bwmorph(img_clearborder, img_majority, "majority");
 
-        /// (5.6) perform a final morphology erosion with a ellipsoid-shaped kernel with specified kernel-size and subsequently area opening
+        /// (5.6) perform a final morphology erosion with a ellipsoid-shaped kernel with specifeid kernel-size
         if (erode_kernelSize > 0) {
             cv::Mat kernelErode = cv::getStructuringElement( cv::MORPH_ELLIPSE, cv::Size(erode_kernelSize,erode_kernelSize) );
             cv::erode(img_majority, img_erode_2, kernelErode);
-            
+
             IPT::bwareaopen(img_erode_2, img_erode_b, min_region_size);
         
             /// (5.7) perform again majority operation to remove generated artifacts

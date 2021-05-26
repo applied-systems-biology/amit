@@ -423,8 +423,8 @@ namespace ibp
             img_segmented.copyTo(img_raw_segmentation);
         }
 
-        ///// (5) image-fill, morphology erosion, remove-small-objects, clear-border, majority, erosion, majority /////
-        cv::Mat img_fill, img_erode, img_bwareopen, img_clearborder, img_majority, img_erode_2, img_erode_b, dst;
+        ///// (5) image-fill, morphology erosion, remove-small-objects, clear-border, majority, erosion, majority, fill-holes /////
+        cv::Mat img_fill, img_erode, img_bwareopen, img_clearborder, img_majority, img_erode_2, img_erode_b, img_fill2, dst;
 
         /// (5.1) fill all holes in (low-contrast) cells
         IPT::imfill(img_raw_segmentation, img_fill);
@@ -455,12 +455,15 @@ namespace ibp
             IPT::bwareaopen(img_erode_2, img_erode_b, min_region_size);
         
             /// (5.7) perform again majority operation to remove generated artifacts
-            IPT::bwmorph(img_erode_b, dst, "majority");    
+            IPT::bwmorph(img_erode_b, img_fill2, "majority");    
         }
         else {
-            img_majority.copyTo(dst);
+            img_majority.copyTo(img_fill2);
         }
         
+        /// (5.8) take care thate all holes are filled (only available in master-version)
+        IPT::imfill(img_fill2, dst);
+
         return dst;
 
     }

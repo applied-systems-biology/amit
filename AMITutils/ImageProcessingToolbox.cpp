@@ -583,6 +583,7 @@ namespace ImageProcessingToolbox
      * components (objects) that have fewer than p pixels.
      * This operation is known as an area opening
      * conn = 4, means: two-dimensional four-connected neighborhood
+     * conn = 8, means: two-dimensional four-connected neighborhood
      * 
      * @param src input CV_8UC1 image
      * @param dst output CV_8UC1 imge
@@ -590,22 +591,29 @@ namespace ImageProcessingToolbox
      */
     void bwareaopen(const cv::Mat &src, cv::Mat &dst,  const int &p){   
 
-        dst = cv::Mat::zeros(src.size(), CV_8UC1);
+        int connectivity = 8;
 
-        std::vector<std::vector<cv::Point>> contours;
-        std::vector<cv::Vec4i> hierarchy;
-        cv::findContours(src, contours, hierarchy, cv::RetrievalModes::RETR_LIST, cv::CHAIN_APPROX_SIMPLE);
+        cv::Mat labels, stats, centroids;
+        int n_labels_overlay = cv::connectedComponentsWithStats( src, labels, stats, centroids, connectivity, CV_16U);
         
-        // for each contour, determine its total occupying area
-        for(size_t i = 0; i < contours.size(); ++i)
-        {
-            double area = fabs(contourArea(cv::Mat(contours[i])));
+        dst = cv::Mat::zeros( src.size(), CV_8UC1);
 
-            if( fabs( area ) >= (double) p){
-                cv::drawContours(dst, contours, i, cv::Scalar(255), cv::FILLED);
+        /// iterate over all objects and filter by size (skip the background: label_id=0 ; i=1)        
+        for (size_t i = 1; i < n_labels_overlay; i++) {
+
+            int area = stats.at<int>(i,4);
+
+            // filter by size of the corresponding objects and extract just this single label
+            if (area >= p ) {
+
+                cv::Mat single_label = (labels == i);
+
+                cv::bitwise_or(dst, single_label, dst);
+
             }
 
         }
+
     }
 
     /**

@@ -460,9 +460,14 @@ namespace ibp
         else {
             img_majority.copyTo(img_fill2);
         }
+
+        cv::Mat img_bwareopen_final;
         
         /// (5.8) take care thate all holes are filled (only available in master-version)
-        IPT::imfill(img_fill2, dst);
+        IPT::imfill(img_fill2, img_bwareopen_final);
+
+        /// (5.9) perform a final bwareaopen         
+        IPT::bwareaopen(img_bwareopen_final, dst, min_region_size);
 
         return dst;
 

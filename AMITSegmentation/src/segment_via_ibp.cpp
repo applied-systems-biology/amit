@@ -424,19 +424,16 @@ namespace ibp
         }
 
         ///// (5) image-fill, morphology erosion, remove-small-objects, clear-border, majority, erosion, majority, fill-holes /////
-        cv::Mat img_fill, img_erode, img_bwareopen, img_clearborder, img_majority, img_erode_2, img_erode_b, img_fill2, dst;
+        cv::Mat img_erode, img_bwareopen, img_clearborder, img_majority, img_erode_2, img_erode_b, img_fill2, dst;
 
-        /// (5.1) fill all holes in (low-contrast) cells
-        IPT::imfill(img_raw_segmentation, img_fill);
-
-        /// (5.2) morphology erosion with small rectangular shaped kernel
+        /// (5.1) morphology erosion with small rectangular shaped kernel
         cv::Mat kernelErode = cv::getStructuringElement( cv::MORPH_CROSS, cv::Size(1,1) );
-        cv::erode(img_fill, img_erode, kernelErode);
+        cv::erode(img_raw_segmentation, img_erode, kernelErode);
 
-        /// (5.3) remove small objects, specified by the min. number of pixels in an object
+        /// (5.2) remove small objects, specified by the min. number of pixels in an object
         IPT::bwareaopen(img_erode, img_bwareopen, min_region_size);
 
-        /// (5.4) clear the objects connected to the image border if specified
+        /// (5.3) clear the objects connected to the image border if specified
         if (clear_border) {
             IPT::imclearborder(img_bwareopen, img_clearborder);    
         }
@@ -444,29 +441,29 @@ namespace ibp
             img_bwareopen.copyTo(img_clearborder);
         }        
 
-        /// (5.5) perform bwmorph - majority operation to set pixel to 1 if five or more pixels in its 3-by-3 neighborhood are 1s
+        /// (5.4) perform bwmorph - majority operation to set pixel to 1 if five or more pixels in its 3-by-3 neighborhood are 1s
         IPT::bwmorph(img_clearborder, img_majority, "majority");
 
-        /// (5.6) perform a final morphology erosion with a ellipsoid-shaped kernel with specifeid kernel-size
+        /// (5.5) perform a final morphology erosion with a ellipsoid-shaped kernel with specifeid kernel-size
         if (erode_kernelSize > 0) {
             cv::Mat kernelErode = cv::getStructuringElement( cv::MORPH_ELLIPSE, cv::Size(erode_kernelSize,erode_kernelSize) );
             cv::erode(img_majority, img_erode_2, kernelErode);
 
             IPT::bwareaopen(img_erode_2, img_erode_b, min_region_size);
         
-            /// (5.7) perform again majority operation to remove generated artifacts
+            /// (5.6) perform again majority operation to remove generated artifacts
             IPT::bwmorph(img_erode_b, img_fill2, "majority");    
         }
         else {
             img_majority.copyTo(img_fill2);
         }
-
+        
         cv::Mat img_bwareopen_final;
         
-        /// (5.8) take care thate all holes are filled (only available in master-version)
+        /// (5.7) take care thate all holes are filled (only available in master-version)
         IPT::imfill(img_fill2, img_bwareopen_final);
 
-        /// (5.9) perform a final bwareaopen         
+        /// (5.8) perform a final bwareaopen
         IPT::bwareaopen(img_bwareopen_final, dst, min_region_size);
 
         return dst;

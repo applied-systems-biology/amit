@@ -114,11 +114,15 @@ Take a closer look at the corresponding *README* - files in the respective subfo
 Please cite  **AMIT** if you are using this work in your publication. Here is an example BibTeX entry:
 
 > ```json
-> @article{praetorius2020AMIT,
->   title={Enhanced segmentation of label-free cells for automated migration and interaction tracking},
->   author={Belyaev, Ivan and Praetorius, Jan-Philipp and Medyukhina, Anna and Figge, Marc Thilo},
->   journal={arXiv preprint arXiv:20XY.ABCDE},
->   year={2020}
+> @article{Belyaev2021,
+>   doi = {10.1002/cyto.a.24466},
+>   url = {https://doi.org/10.1002/cyto.a.24466},
+>   year = {2021},
+>   month = jun,
+>   publisher = {Wiley},
+>   author = {Ivan Belyaev and Jan-Philipp Praetorius and Anna Medyukhina and Marc Thilo Figge},
+>   title = {Enhanced segmentation of label-free cells for automated migration and interaction tracking},
+>   journal = {Cytometry Part A}
 > }
 > ```
 
